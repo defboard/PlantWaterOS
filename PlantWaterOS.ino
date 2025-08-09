@@ -62,6 +62,7 @@ DevNull logfile;
 #if USE_PUMP
 DateTime nextPumpTime;
 #endif
+int numPumpEvents = 0;
 
 int sensorValue = 0;
 
@@ -127,11 +128,12 @@ void loop()
 #if USE_PUMP
   if (now.unixtime() > nextPumpTime.unixtime() and isWaterTime(now)) {
     nextPumpTime = DateTime(now.unixtime() + PUMP_INTERVAL);
+    numPumpEvents += 1;
 
     clearDisplay();
 
-    println(Serial, now, F(": Pump starting"));
-    println(logfile, now, F(": Pump starting"));
+    println(Serial, now, F(": Pump event "), numPumpEvents, F("starting"));
+    println(logfile, now, F(": Pump event "), numPumpEvents, F(" starting"));
     println(display, F("PUMPING.."));
     display.display();
 
@@ -140,8 +142,8 @@ void loop()
     digitalWrite(PUMP_PIN, PUMP_OFF);
 
     now = RTClib::now(Wire);
-    println(Serial, now, F(": Pump stopped"));
-    println(logfile, now, F(": Pump stopped"));
+    println(Serial, now, F(": Pump event "), numPumpEvents, F(" stopped"));
+    println(logfile, now, F(": Pump event "), numPumpEvents, F(" stopped"));
 
     println(display, F("DONE.."));
     display.display();
