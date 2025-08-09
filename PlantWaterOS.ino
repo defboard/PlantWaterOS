@@ -44,6 +44,7 @@ const int DISPLAY_ADDRESS   = 0x3C; // I2C address
 
 
 // Global variables:
+DateTime bootTime;
 DateTime now;
 
 #if USE_DISPLAY
@@ -59,9 +60,7 @@ DateTime nextLogTime;
 DevNull logfile;
 #endif
 
-#if USE_PUMP
 DateTime nextPumpTime;
-#endif
 int numPumpEvents = 0;
 
 int sensorValue = 0;
@@ -76,14 +75,14 @@ void setup() {
 
   // needed for RTC and display:
   Wire.begin();
-  now = RTClib::now(Wire);
+  bootTime = RTClib::now(Wire);
 
 #if USE_SD
   if (!SD.begin(SD_CS_PIN)) {
     Serial.println(F("SD initialization failed."));
     die();
   }
-  nextLogTime = now;
+  nextLogTime = bootTime;
 #endif
 
 #if USE_DISPLAY
@@ -98,7 +97,7 @@ void setup() {
 #endif
 
 #if USE_PUMP
-  nextPumpTime = DateTime(now.unixtime() + PUMP_FIRST_TIME);
+  nextPumpTime = DateTime(bootTime.unixtime() + PUMP_FIRST_TIME);
   pinMode(PUMP_PIN, OUTPUT);
   digitalWrite(PUMP_PIN, PUMP_OFF);
 #endif
@@ -120,8 +119,32 @@ void loop()
 
 #if USE_DISPLAY
   clearDisplay();
-  println(display, now);
-  println(display, F("A: "), sensorValue);
+  switch ((now.unixtime() - bootTime.unixtime()) / 3 % 6) {
+    case 0:
+      println(display, F("Welcome to:"));
+      println(display, F("- Plant Water OS -"));
+      break;
+    case 1:
+      println(display, F("Soil moisture:"));
+      println(display, sensorValue);
+      break;
+    case 2:
+      println(display, F("Current time:"));
+      println(display, now);
+      break;
+    case 3:
+      println(display, F("Next pump time:"));
+      println(display, nextPumpTime);
+      break;
+    case 4:
+      println(display, F("Online since:"));
+      println(display, bootTime);
+      break;
+    case 5:
+      println(display, F("Total pump events:"));
+      println(display, numPumpEvents);
+      break;
+  }
   display.display();
 #endif
 
