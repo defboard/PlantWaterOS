@@ -7,6 +7,15 @@
 #define _HOURS     (60l * _MINUTES)
 #define _DAYS      (24l * _HOURS)
 
+#define endl        "\r\n"
+
+
+template <class T>
+Print& operator<< (Print& out, T value)
+{
+  out.print(value);
+  return out;
+}
 
 void printDigits(Print& out, int num, int digits)
 {
@@ -39,26 +48,12 @@ void printTime(Print& out, const DateTime& time)
   printDigits(out, time.second(), 2);
 }
 
-void printDateTime(Print& out, const DateTime& datetime)
+Print& operator<< (Print& out, DateTime datetime)
 {
   printDate(out, datetime);
   out.print(F(" "));
   printTime(out, datetime);
-}
-
-template <class T>
-void logTo(Print& out, DateTime now, T text)
-{
-  printDateTime(out, now);
-  out.print(F(": "));
-  out.println(text);
-}
-
-void logSensorValue(Print& out, DateTime now, int value)
-{
-  printDateTime(out, now);
-  out.print(F(": "));
-  out.println(value);
+  return out;
 }
 
 void die()

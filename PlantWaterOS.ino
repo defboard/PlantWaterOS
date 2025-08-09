@@ -97,18 +97,16 @@ void loop()
   sensorValue = analogRead(SENSOR_PIN);
 
   // Log Value
-  logSensorValue(Serial, now, sensorValue);
+  Serial << now << F(": ") << sensorValue << endl;
   if (counter % 10 == 2) {
-    logSensorValue(logfile, now, sensorValue);
+    logfile << now << F(": ") << sensorValue << endl;
   }
   counter += 1;
 
 #if USE_DISPLAY
   clearDisplay();
-  printDateTime(display, now);
-  display.println(F(""));
-  display.print(F("A: "));
-  display.println(sensorValue);
+  display << now << endl;
+  display << F("A: ") << sensorValue << endl;
   display.display();
 #endif
 
@@ -118,10 +116,10 @@ void loop()
 
     clearDisplay();
 
-    logTo(Serial, now, F("Pump starting"));
-    logTo(logfile, now, F("Pump starting"));
+    Serial << now << F(": Pump starting") << endl;
+    logfile << now << F(": Pump starting") << endl;
 #if USE_DISPLAY
-    display.println(F("PUMPING.."));
+    display << F("PUMPING..") << endl;
     display.display();
 #endif
 
@@ -130,10 +128,10 @@ void loop()
     digitalWrite(PUMP_PIN, PUMP_OFF);
 
     now = RTClib::now(Wire);
-    logTo(Serial, now, F("Pump stopped"));
-    logTo(logfile, now, F("Pump stopped"));
+    Serial << now << F(": Pump stopped") << endl;
+    logfile << now << F(": Pump stopped") << endl;
 #if USE_DISPLAY
-    display.println(F("DONE.."));
+    display << F("DONE..") << endl;
     display.display();
 #endif
   }
