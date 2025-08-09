@@ -27,7 +27,12 @@ const int PUMP_ON       = HIGH;
 const int PUMP_OFF      = 1 - PUMP_ON;
 const int PUMP_DURATION = 2500;     // [ms]
 
+const uint32_t PUMP_FIRST_TIME = 1 * _DAYS;
 const uint32_t PUMP_INTERVAL = 3 * _DAYS;
+
+bool isWaterTime(DateTime t) {
+  return t.hour() >= 7 and t.hour() <= 18;
+}
 
 // Native display width is W x H = 128 x 64, but we lower resolution
 // to save precious memory:
@@ -53,7 +58,7 @@ DevNull logfile;
 #endif
 
 #if USE_PUMP
-DateTime lastPumpTime;
+DateTime nextPumpTime;
 #endif
 
 int counter = 0;
@@ -69,6 +74,7 @@ void setup() {
 
   // needed for RTC and display:
   Wire.begin();
+  now = RTClib::now(Wire);
 
 #if USE_SD
   if (!SD.begin(SD_CS_PIN)) {
@@ -89,7 +95,7 @@ void setup() {
 #endif
 
 #if USE_PUMP
-  lastPumpTime = RTClib::now(Wire);
+  nextPumpTime = DateTime(now.unixtime() + PUMP_FIRST_TIME);
   pinMode(PUMP_PIN, OUTPUT);
   digitalWrite(PUMP_PIN, PUMP_OFF);
 #endif
@@ -115,8 +121,8 @@ void loop()
 #endif
 
 #if USE_PUMP
-  if (now.unixtime() - lastPumpTime.unixtime() > PUMP_INTERVAL) {
-    lastPumpTime = now;
+  if (now.unixtime() > nextPumpTime.unixtime() and isWaterTime(now)) {
+    nextPumpTime = DateTime(now.unixtime() + PUMP_INTERVAL);
 
     clearDisplay();
 
