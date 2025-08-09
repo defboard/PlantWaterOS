@@ -89,7 +89,9 @@ void setup() {
     die();
   }
   nextLogTime = bootTime;
+  println(logfile, bootTime, F(": system booted"));
 #endif
+  println(Serial, bootTime, F(": system booted"));
 
 #if USE_DISPLAY
   if(!display.begin(SSD1306_SWITCHCAPVCC, DISPLAY_ADDRESS, true, false)) {
