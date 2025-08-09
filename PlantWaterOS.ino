@@ -23,7 +23,7 @@ const int SENSOR_PIN    = A6;
 const int SD_CS_PIN     = 10;
 const int PUMP_PIN      = 6;
 
-const int PUMP_ON       = LOW;
+const int PUMP_ON       = HIGH;
 const int PUMP_OFF      = 1 - PUMP_ON;
 const int PUMP_DURATION = 2500;     // [ms]
 
