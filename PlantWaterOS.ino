@@ -42,10 +42,14 @@ DateTime now;
 
 #if USE_DISPLAY
 Adafruit_SSD1306 display(DISPLAY_WIDTH, DISPLAY_HEIGHT, &Wire, DISPLAY_RESET_PIN);
+#else
+NullDisplay display;
 #endif
 
 #if USE_SD
 LogFile logfile("sensor.log");
+#else
+DevNull logfile;
 #endif
 
 #if USE_PUMP
@@ -97,16 +101,16 @@ void loop()
   sensorValue = analogRead(SENSOR_PIN);
 
   // Log Value
-  Serial << now << F(": ") << sensorValue << endl;
+  println(Serial, now, F(": "), sensorValue);
   if (counter % 10 == 2) {
-    logfile << now << F(": ") << sensorValue << endl;
+    println(logfile, now, F(": "), sensorValue);
   }
   counter += 1;
 
 #if USE_DISPLAY
   clearDisplay();
-  display << now << endl;
-  display << F("A: ") << sensorValue << endl;
+  println(display, now);
+  println(display, F("A: "), sensorValue);
   display.display();
 #endif
 
@@ -116,24 +120,21 @@ void loop()
 
     clearDisplay();
 
-    Serial << now << F(": Pump starting") << endl;
-    logfile << now << F(": Pump starting") << endl;
-#if USE_DISPLAY
-    display << F("PUMPING..") << endl;
+    println(Serial, now, F(": Pump starting"));
+    println(logfile, now, F(": Pump starting"));
+    println(display, F("PUMPING.."));
     display.display();
-#endif
 
     digitalWrite(PUMP_PIN, PUMP_ON);
     delay(PUMP_DURATION);
     digitalWrite(PUMP_PIN, PUMP_OFF);
 
     now = RTClib::now(Wire);
-    Serial << now << F(": Pump stopped") << endl;
-    logfile << now << F(": Pump stopped") << endl;
-#if USE_DISPLAY
-    display << F("DONE..") << endl;
+    println(Serial, now, F(": Pump stopped"));
+    println(logfile, now, F(": Pump stopped"));
+
+    println(display, F("DONE.."));
     display.display();
-#endif
   }
 #endif
 

@@ -7,14 +7,39 @@
 #define _HOURS     (60l * _MINUTES)
 #define _DAYS      (24l * _HOURS)
 
-#define endl        "\r\n"
+
+class DevNull : public Print {
+  size_t write(uint8_t) final { return 0; };
+};
+
+struct NullDisplay : public DevNull {
+    void display() {}
+};
 
 
 template <class T>
-Print& operator<< (Print& out, T value)
+void print(Print& out, T value)
 {
   out.print(value);
-  return out;
+}
+
+template <class Head, class ...Tail>
+void print(Print& out, Head head, Tail... tail)
+{
+  print(out, head);
+  print(out, tail...);
+}
+
+template <class Head, class ...Tail>
+void println(Print& out, Head head, Tail... tail)
+{
+  print(out, head);
+  println(out, tail...);
+}
+
+void println(Print& out)
+{
+  out.println();
 }
 
 void printDigits(Print& out, int num, int digits)
@@ -48,12 +73,11 @@ void printTime(Print& out, const DateTime& time)
   printDigits(out, time.second(), 2);
 }
 
-Print& operator<< (Print& out, DateTime datetime)
+void print(Print& out, DateTime datetime)
 {
   printDate(out, datetime);
   out.print(F(" "));
   printTime(out, datetime);
-  return out;
 }
 
 void die()
