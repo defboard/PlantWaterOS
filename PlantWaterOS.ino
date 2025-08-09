@@ -27,6 +27,7 @@ const int PUMP_ON       = HIGH;
 const int PUMP_OFF      = 1 - PUMP_ON;
 const int PUMP_DURATION = 2500;     // [ms]
 
+const uint32_t LOG_INTERVAL = 1 * _HOURS;
 const uint32_t PUMP_FIRST_TIME = 1 * _DAYS;
 const uint32_t PUMP_INTERVAL = 3 * _DAYS;
 
@@ -53,6 +54,7 @@ NullDisplay display;
 
 #if USE_SD
 LogFile logfile("sensor.log");
+DateTime nextLogTime;
 #else
 DevNull logfile;
 #endif
@@ -61,7 +63,6 @@ DevNull logfile;
 DateTime nextPumpTime;
 #endif
 
-int counter = 0;
 int sensorValue = 0;
 
 
@@ -81,6 +82,7 @@ void setup() {
     Serial.println(F("SD initialization failed."));
     die();
   }
+  nextLogTime = now;
 #endif
 
 #if USE_DISPLAY
@@ -108,10 +110,12 @@ void loop()
 
   // Log Value
   println(Serial, now, F(": "), sensorValue);
-  if (counter % 10 == 2) {
+#if USE_SD
+  if (now.unixtime() > nextLogTime.unixtime()) {
+    nextLogTime = DateTime(now.unixtime() + LOG_INTERVAL);
     println(logfile, now, F(": "), sensorValue);
   }
-  counter += 1;
+#endif
 
 #if USE_DISPLAY
   clearDisplay();
