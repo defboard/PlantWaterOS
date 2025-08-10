@@ -38,6 +38,7 @@ const int DISPLAY_ADDRESS   = 0x3C; // I2C address
 
 
 // Global variables:
+DateTime now;
 
 #if USE_DISPLAY
 Adafruit_SSD1306 display(DISPLAY_WIDTH, DISPLAY_HEIGHT, &Wire, DISPLAY_RESET_PIN);
@@ -52,6 +53,7 @@ DateTime lastPumpTime;
 #endif
 
 int counter = 0;
+int sensorValue = 0;
 
 
 void setup() {
@@ -91,8 +93,8 @@ void setup() {
 
 void loop()
 {
-  DateTime now = RTClib::now(Wire);
-  int sensorValue = analogRead(SENSOR_PIN);
+  now = RTClib::now(Wire);
+  sensorValue = analogRead(SENSOR_PIN);
 
   // Log Value
   logSensorValue(Serial, now, sensorValue);
@@ -127,9 +129,9 @@ void loop()
     delay(PUMP_DURATION);
     digitalWrite(PUMP_PIN, PUMP_OFF);
 
-    DateTime stopTime = RTClib::now(Wire);
-    logTo(Serial, stopTime, F("Pump stopped"));
-    logTo(logfile, stopTime, F("Pump stopped"));
+    now = RTClib::now(Wire);
+    logTo(Serial, now, F("Pump stopped"));
+    logTo(logfile, now, F("Pump stopped"));
 #if USE_DISPLAY
     display.println(F("DONE.."));
     display.display();
