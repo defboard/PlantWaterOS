@@ -2,6 +2,8 @@
 #include <Print.h>
 #include <RTClib.h>
 
+# define endl   "\r\n"
+
 
 class DevNull : public Print {
   size_t write(uint8_t) final { return 0; };
@@ -15,76 +17,57 @@ struct Temperature {
   int degreeCelsius;
 };
 
+struct DoubleDigits {
+  unsigned number;
+};
+
+struct DatePart { DateTime dt; };
+struct TimePart { DateTime dt; };
+
 
 template <class T>
-void print(Print& out, T value)
+inline Print& operator<< (Print& out, T value)
 {
   out.print(value);
+  return out;
 }
 
-template <class Head, class ...Tail>
-void print(Print& out, Head head, Tail... tail)
+Print& operator<< (Print& out, DoubleDigits num)
 {
-  print(out, head);
-  print(out, tail...);
+  return out
+      << (num.number / 10)
+      << (num.number % 10);
 }
 
-template <class Head, class ...Tail>
-void println(Print& out, Head head, Tail... tail)
+Print& operator<< (Print& out, DatePart date)
 {
-  print(out, head);
-  println(out, tail...);
+  return out
+    << DoubleDigits{date.dt.year() / 100}
+    << DoubleDigits{date.dt.year() % 100}
+    << F("-") << date.dt.month()
+    << F("-") << date.dt.day();
 }
 
-void println(Print& out)
+Print& operator<< (Print& out, TimePart time)
 {
-  out.println();
+  return out
+    << DoubleDigits{time.dt.hour()} << F(":")
+    << DoubleDigits{time.dt.minute()} << F(":")
+    << DoubleDigits{time.dt.second()};
 }
 
-void printDigits(Print& out, int num, int digits)
+Print& operator<< (Print& out, DateTime datetime)
 {
-  int place = 1;
-  while (digits > 1) {
-    --digits;
-    place *= 10;
-  }
-  while (place > 0) {
-    out.print(num / place % 10);
-    place /= 10;
-  }
+  return out
+      << DatePart{datetime} << F(" ")
+      << TimePart{datetime};
 }
 
-void printDate(Print& out, const DateTime& date)
+Print& operator<< (Print& out, Temperature temperature)
 {
-  printDigits(out, date.year(), 4);
-  out.print(F("-"));
-  printDigits(out, date.month(), 2);
-  out.print(F("-"));
-  printDigits(out, date.day(), 2);
-}
-
-void printTime(Print& out, const DateTime& time)
-{
-  printDigits(out, time.hour(), 2);
-  out.print(F(":"));
-  printDigits(out, time.minute(), 2);
-  out.print(F(":"));
-  printDigits(out, time.second(), 2);
-}
-
-void print(Print& out, DateTime datetime)
-{
-  printDate(out, datetime);
-  out.print(F(" "));
-  printTime(out, datetime);
-}
-
-void print(Print& out, Temperature temperature)
-{
-  out.print((int)temperature.degreeCelsius);
-  out.print(F("."));
-  out.print((int)(temperature.degreeCelsius * 10) % 10);
-  out.print(F("C"));
+  return out
+      << (int)(temperature.degreeCelsius)           << F(".")
+      << (int)(temperature.degreeCelsius * 10) % 10 << F("C");
 }
 
 void die()

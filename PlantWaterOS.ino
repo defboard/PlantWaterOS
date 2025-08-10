@@ -53,6 +53,12 @@ RTC_DS3231 rtc;
 DateTime bootTime;
 DateTime now;
 
+#if USE_SERIAL
+Print & Serial_ = Serial;
+#else
+Print & Serial_ = devnull;
+#endif
+
 #if USE_DISPLAY
 Adafruit_SSD1306 display(DISPLAY_WIDTH, DISPLAY_HEIGHT, &Wire, DISPLAY_RESET_PIN);
 #else
@@ -94,13 +100,13 @@ void setup() {
     die();
   }
   nextLogTime = bootTime;
-  println(logfile, bootTime, F(": system booted"));
+  logfile << bootTime << F(": system booted") << endl;
 #endif
-  println(Serial, bootTime, F(": system booted"));
+  Serial_ << bootTime << F(": system booted") << endl;
 
 #if USE_DISPLAY
   if(!display.begin(SSD1306_SWITCHCAPVCC, DISPLAY_ADDRESS, true, false)) {
-    Serial.println(F("Display initialization failed."));
+    Serial_ << F("Display initialization failed.") << endl;
     die();
   }
   display.clearDisplay();
@@ -123,11 +129,11 @@ void loop()
   temperature.degreeCelsius = rtc.getTemperature();
 
   // Log Value
-  println(Serial, now, F(": "), sensorValue, F(" "), temperature, F(" "), FreeStack(), "B");
+  Serial_ << now << F(": ") << sensorValue << F(" ") << temperature << F(" ") << FreeStack() << "B" << endl;
 #if USE_SD
   if (now > nextLogTime) {
     nextLogTime = now + logInterval;
-    println(logfile, now, F(": "), sensorValue, F(" "), temperature, F(" "), FreeStack(), "B");
+    logfile << now << F(": ") << sensorValue << F(" ") << temperature << F(" ") << FreeStack() << "B" << endl;
   }
 #endif
 
@@ -135,36 +141,36 @@ void loop()
   clearDisplay();
   switch ((now - bootTime).totalseconds() / 3 % 8) {
     case 0:
-      println(display, F("Welcome to:"));
-      println(display, F("- Plant Water OS -"));
+      display << F("Welcome to:") << endl;
+      display << F("- Plant Water OS -") << endl;
       break;
     case 1:
-      println(display, F("Soil moisture:"));
-      println(display, sensorValue);
+      display << F("Soil moisture:") << endl;
+      display << sensorValue << endl;
       break;
     case 2:
-      println(display, F("Temperature:"));
-      println(display, temperature);
+      display << F("Temperature:") << endl;
+      display << temperature << endl;
       break;
     case 3:
-      println(display, F("Current time:"));
-      println(display, now);
+      display << F("Current time:") << endl;
+      display << now << endl;
       break;
     case 4:
-      println(display, F("Next pump time:"));
-      println(display, nextPumpTime);
+      display << F("Next pump time:") << endl;
+      display << nextPumpTime << endl;
       break;
     case 5:
-      println(display, F("Online since:"));
-      println(display, bootTime);
+      display << F("Online since:") << endl;
+      display << bootTime << endl;
       break;
     case 6:
-      println(display, F("Total pump events:"));
-      println(display, numPumpEvents);
+      display << F("Total pump events:") << endl;
+      display << numPumpEvents << endl;
       break;
     case 7:
-      println(display, F("Free RAM:"));
-      println(display, FreeStack(), F(" Byte"));
+      display << F("Free RAM:") << endl;
+      display << FreeStack() << F(" Byte") << endl;
       break;
   }
   display.display();
@@ -177,9 +183,9 @@ void loop()
 
     clearDisplay();
 
-    println(Serial, now, F(": Pump event "), numPumpEvents, F("starting"));
-    println(logfile, now, F(": Pump event "), numPumpEvents, F(" starting"));
-    println(display, F("PUMPING.."));
+    Serial_ << now << F(": Pump event ") << numPumpEvents << F("starting") << endl;
+    logfile << now << F(": Pump event ") << numPumpEvents << F(" starting") << endl;
+    display << F("PUMPING..") << endl;
     display.display();
 
     digitalWrite(PUMP_PIN, PUMP_ON);
@@ -187,10 +193,10 @@ void loop()
     digitalWrite(PUMP_PIN, PUMP_OFF);
 
     now = rtc.now();
-    println(Serial, now, F(": Pump event "), numPumpEvents, F(" stopped"));
-    println(logfile, now, F(": Pump event "), numPumpEvents, F(" stopped"));
+    Serial_ << now << F(": Pump event ") << numPumpEvents << F(" stopped") << endl;
+    logfile << now << F(": Pump event ") << numPumpEvents << F(" stopped") << endl;
 
-    println(display, F("DONE.."));
+    display << F("DONE..") << endl;
     display.display();
   }
 #endif
