@@ -11,6 +11,10 @@ struct NullDisplay : public DevNull {
     void display() {}
 };
 
+struct Temperature {
+  int degreeCelsius;
+};
+
 
 template <class T>
 void print(Print& out, T value)
@@ -73,6 +77,14 @@ void print(Print& out, DateTime datetime)
   printDate(out, datetime);
   out.print(F(" "));
   printTime(out, datetime);
+}
+
+void print(Print& out, Temperature temperature)
+{
+  out.print((int)temperature.degreeCelsius);
+  out.print(F("."));
+  out.print((int)(temperature.degreeCelsius * 10) % 10);
+  out.print(F("C"));
 }
 
 void die()
