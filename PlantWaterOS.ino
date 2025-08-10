@@ -8,6 +8,7 @@
 
 #include <Wire.h>
 #include <RTClib.h>
+#include <FreeStack.h>
 
 #if USE_DISPLAY
 # include <Adafruit_GFX.h>
@@ -122,17 +123,17 @@ void loop()
   temperature.degreeCelsius = rtc.getTemperature();
 
   // Log Value
-  println(Serial, now, F(": "), sensorValue, F(" "), temperature);
+  println(Serial, now, F(": "), sensorValue, F(" "), temperature, F(" "), FreeStack(), "B");
 #if USE_SD
   if (now > nextLogTime) {
     nextLogTime = now + logInterval;
-    println(logfile, now, F(": "), sensorValue, F(" "), temperature);
+    println(logfile, now, F(": "), sensorValue, F(" "), temperature, F(" "), FreeStack(), "B");
   }
 #endif
 
 #if USE_DISPLAY
   clearDisplay();
-  switch ((now - bootTime).totalseconds() / 3 % 7) {
+  switch ((now - bootTime).totalseconds() / 3 % 8) {
     case 0:
       println(display, F("Welcome to:"));
       println(display, F("- Plant Water OS -"));
@@ -160,6 +161,10 @@ void loop()
     case 6:
       println(display, F("Total pump events:"));
       println(display, numPumpEvents);
+      break;
+    case 7:
+      println(display, F("Free RAM:"));
+      println(display, FreeStack(), F(" Byte"));
       break;
   }
   display.display();
