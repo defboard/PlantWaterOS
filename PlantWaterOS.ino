@@ -45,7 +45,7 @@ const int DISPLAY_ADDRESS   = 0x3C; // I2C address
 
 // Global variables:
 RTC_DS3231 rtc;
-DateTime bootTime(__DATE__, __TIME__);
+DateTime bootTime;
 DateTime now;
 
 #if USE_DISPLAY
@@ -77,6 +77,7 @@ void setup() {
   // needed for RTC and display:
   Wire.begin();
   rtc.begin(&Wire);
+  bootTime = DateTime(F(__DATE__), F(__TIME__));
   rtc.adjust(bootTime);
 
 #if USE_SD
