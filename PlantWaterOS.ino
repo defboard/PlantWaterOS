@@ -139,38 +139,22 @@ void loop()
 
 #if USE_DISPLAY
   clearDisplay();
-  switch ((now - bootTime).totalseconds() / 3 % 8) {
+  switch ((now - bootTime).totalseconds() / 4 % 4) {
     case 0:
-      display << F("Welcome to:") << endl;
       display << F("- Plant Water OS -") << endl;
-      break;
-    case 1:
-      display << F("Soil moisture:") << endl;
-      display << sensorValue << endl;
-      break;
-    case 2:
-      display << F("Temperature:") << endl;
-      display << temperature << endl;
-      break;
-    case 3:
-      display << F("Current time:") << endl;
       display << now << endl;
       break;
-    case 4:
-      display << F("Next pump time:") << endl;
-      display << nextPumpTime << endl;
+    case 1:
+      display << F("Soil moisture: ") << sensorValue << endl;
+      display << F("Temperature: ") << temperature << endl;
       break;
-    case 5:
-      display << F("Online since:") << endl;
-      display << bootTime << endl;
+    case 2:
+      display << F("Next pouring: ") << (nextPumpTime - now) << endl;
+      display << F("Total pourings: ") << numPumpEvents << endl;
       break;
-    case 6:
-      display << F("Total pump events:") << endl;
-      display << numPumpEvents << endl;
-      break;
-    case 7:
-      display << F("Free RAM:") << endl;
-      display << FreeStack() << F(" Byte") << endl;
+    case 3:
+      display << F("Uptime: ") << (now - bootTime) << endl;
+      display << F("Free RAM: ") << FreeStack() << F(" Byte") << endl;
       break;
   }
   display.display();

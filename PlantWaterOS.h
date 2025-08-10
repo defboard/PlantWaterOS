@@ -63,6 +63,22 @@ Print& operator<< (Print& out, DateTime datetime)
       << TimePart{datetime};
 }
 
+Print& operator<< (Print& out, TimeSpan timespan)
+{
+  int days = timespan.days();
+  int hours = timespan.hours();
+  int minutes = timespan.minutes();
+
+  if (days > 0) {
+    return out << days << F("d ")
+               << hours << F("h");
+  }
+  if (hours > 0) {
+    out << hours << F("h ");
+  }
+  return out << minutes << F("m");
+}
+
 Print& operator<< (Print& out, Temperature temperature)
 {
   return out
