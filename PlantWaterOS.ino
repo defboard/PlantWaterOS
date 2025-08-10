@@ -4,6 +4,7 @@
 #define USE_PUMP      1
 
 #include "PlantWaterOS.h"
+#include "buildtime.h"
 
 #include <Wire.h>
 #include <RTClib.h>
@@ -77,7 +78,9 @@ void setup() {
   // needed for RTC and display:
   Wire.begin();
   rtc.begin(&Wire);
-  bootTime = DateTime(F(__DATE__), F(__TIME__));
+  bootTime = DateTime(
+      BUILD_YEAR, BUILD_MONTH, BUILD_DAY,
+      BUILD_HOUR, BUILD_MINUTE, BUILD_SECOND);
   rtc.adjust(bootTime);
 
 #if USE_SD
