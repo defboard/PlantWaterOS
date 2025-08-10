@@ -56,7 +56,7 @@ DateTime now;
 #if USE_SERIAL
 Print & Serial_ = Serial;
 #else
-Print & Serial_ = devnull;
+DevNull Serial_;
 #endif
 
 #if USE_DISPLAY
@@ -66,10 +66,10 @@ NullDisplay display;
 #endif
 
 #if USE_SD
-LogFile logfile("sensor.log");
+LogFile logfile("sensor.log", Serial_);
 DateTime nextLogTime;
 #else
-DevNull logfile;
+Print& logfile = Serial_;
 #endif
 
 DateTime nextPumpTime;
@@ -107,9 +107,8 @@ void setup() {
     die();
   }
   nextLogTime = bootTime;
-  logfile << bootTime << F(": system booted - ") << powerLossMessage << endl;
 #endif
-  Serial_ << bootTime << F(": system booted - ") << powerLossMessage << endl;
+  logfile << bootTime << F(": system booted - ") << powerLossMessage << endl;
 
 #if USE_DISPLAY
   if(!display.begin(SSD1306_SWITCHCAPVCC, DISPLAY_ADDRESS, true, false)) {
@@ -136,13 +135,16 @@ void loop()
   temperature.degreeCelsius = rtc.getTemperature();
 
   // Log Value
-  Serial_ << now << F(": ") << sensorValue << F(" ") << temperature << F(" ") << FreeStack() << "B" << endl;
 #if USE_SD
   if (now > nextLogTime) {
     nextLogTime = now + logInterval;
     logfile << now << F(": ") << sensorValue << F(" ") << temperature << F(" ") << FreeStack() << "B" << endl;
   }
+  else
 #endif
+  {
+    Serial_ << now << F(": ") << sensorValue << F(" ") << temperature << F(" ") << FreeStack() << "B" << endl;
+  }
 
 #if USE_DISPLAY
   clearDisplay();
@@ -174,7 +176,6 @@ void loop()
 
     clearDisplay();
 
-    Serial_ << now << F(": Pump event ") << numPumpEvents << F("starting") << endl;
     logfile << now << F(": Pump event ") << numPumpEvents << F(" starting") << endl;
     display << F("PUMPING..") << endl;
     display.display();
@@ -184,7 +185,6 @@ void loop()
     digitalWrite(PUMP_PIN, PUMP_OFF);
 
     now = rtc.now();
-    Serial_ << now << F(": Pump event ") << numPumpEvents << F(" stopped") << endl;
     logfile << now << F(": Pump event ") << numPumpEvents << F(" stopped") << endl;
 
     display << F("DONE..") << endl;

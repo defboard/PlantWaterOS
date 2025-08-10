@@ -25,8 +25,9 @@ SdType SD;
 class LogFile : public Print
 {
 public:
-  LogFile(const char* filename)
+  LogFile(const char* filename, Print& serial)
     : _filename(filename)
+    , _serial(serial)
   { }
 
   ~LogFile() { _file.close(); }
@@ -45,6 +46,7 @@ public:
     if (!_file) {
       open();
     }
+    _serial.write(c);
     return _file.write(c);
   }
 
@@ -64,4 +66,5 @@ public:
 private:
   const char* _filename;
   FileType _file;
+  Print& _serial;
 };
