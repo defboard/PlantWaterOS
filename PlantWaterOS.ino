@@ -6,7 +6,7 @@
 #include "PlantWaterOS.h"
 
 #include <Wire.h>
-#include <DS3231.h>
+#include <RTClib.h>
 
 #if USE_DISPLAY
 # include <Adafruit_GFX.h>
@@ -44,6 +44,7 @@ const int DISPLAY_ADDRESS   = 0x3C; // I2C address
 
 
 // Global variables:
+RTC_DS3231 rtc;
 DateTime bootTime;
 DateTime now;
 
@@ -75,7 +76,8 @@ void setup() {
 
   // needed for RTC and display:
   Wire.begin();
-  bootTime = RTClib::now(Wire);
+  rtc.begin(&Wire);
+  bootTime = rtc.now();
 
 #if USE_SD
   if (!SD.begin(SD_CS_PIN)) {
@@ -105,7 +107,7 @@ void setup() {
 
 void loop()
 {
-  now = RTClib::now(Wire);
+  now = rtc.now();
   sensorValue = analogRead(SENSOR_PIN);
 
   // Log Value
@@ -164,7 +166,7 @@ void loop()
     delay(PUMP_DURATION);
     digitalWrite(PUMP_PIN, PUMP_OFF);
 
-    now = RTClib::now(Wire);
+    now = rtc.now();
     println(Serial, now, F(": Pump event "), numPumpEvents, F(" stopped"));
     println(logfile, now, F(": Pump event "), numPumpEvents, F(" stopped"));
 
