@@ -11,7 +11,7 @@ monitor:
 	arduino-cli monitor -p /dev/ttyUSB0 -b arduino:avr:nano
 
 install-libs:
-	arduino-cli lib install "Adafruit GFX Library" "Adafruit SSD1306" "SD" "RTClib"
+	arduino-cli lib install "Adafruit GFX Library" "Adafruit SSD1306" "SdFat" "RTClib"
 
 .SILENT:
 compile-silent: compile

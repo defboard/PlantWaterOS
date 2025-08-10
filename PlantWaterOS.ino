@@ -36,6 +36,9 @@ bool isWaterTime(DateTime t) {
   return t.hour() >= 7 and t.hour() <= 18;
 }
 
+# define SPI_CLOCK    SD_SCK_MHZ(40) // 50MHz is maximum but might be unstable
+# define SD_CONFIG    SdSpiConfig(SD_CS_PIN, SHARED_SPI, SPI_CLOCK)
+
 // Native display width is W x H = 128 x 64, but we lower resolution
 // to save precious memory:
 const int DISPLAY_WIDTH     = 128;  // OLED display width, in pixels
@@ -85,8 +88,8 @@ void setup() {
   rtc.adjust(bootTime);
 
 #if USE_SD
-  if (!SD.begin(SD_CS_PIN)) {
-    Serial.println(F("SD initialization failed."));
+  if (!SD.begin(SD_CONFIG)) {
+    SD.initErrorHalt(&Serial);
     die();
   }
   nextLogTime = bootTime;

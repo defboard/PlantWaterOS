@@ -1,5 +1,26 @@
 #pragma once
-#include <SD.h>
+#include <SdFat.h>
+
+# define SD_FAT_TYPE 0
+
+# if SD_FAT_TYPE == 0
+using SdType   = SdFat;
+using FileType = File;
+# elif SD_FAT_TYPE == 1
+using SdType   = SdFat32;
+using FileType = File32;
+# elif SD_FAT_TYPE == 2
+using SdType   = SdExFat;
+using FileType = ExFile;
+# elif SD_FAT_TYPE == 3
+using SdType   = SdFs;
+using FileType = FsFile;
+# else
+#  error Invalid SD_FAT_TYPE
+# endif
+
+SdType SD;
+
 
 class LogFile : public Print
 {
@@ -13,7 +34,7 @@ public:
   void open()
   {
     _file.close();
-    _file = SD.open(_filename, FILE_WRITE);
+    _file.open(_filename, O_RDWR | O_CREAT | O_APPEND);
     if (not _file) {
       Serial.println(F("Failed to open logfile!"));
     }
@@ -42,5 +63,5 @@ public:
 
 private:
   const char* _filename;
-  File _file;
+  FileType _file;
 };
