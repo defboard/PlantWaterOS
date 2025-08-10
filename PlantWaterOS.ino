@@ -27,9 +27,9 @@ const int PUMP_ON       = HIGH;
 const int PUMP_OFF      = 1 - PUMP_ON;
 const int PUMP_DURATION = 2500;     // [ms]
 
-const uint32_t LOG_INTERVAL = 1 * _HOURS;
-const uint32_t PUMP_FIRST_TIME = 1 * _DAYS;
-const uint32_t PUMP_INTERVAL = 3 * _DAYS;
+const TimeSpan logInterval    (0/*days*/, 1/*hours*/, 0/*minutes*/, 0/*seconds*/);
+const TimeSpan firstPumpDelay (1/*days*/, 0/*hours*/, 0/*minutes*/, 0/*seconds*/);
+const TimeSpan pumpInterval   (3/*days*/, 0/*hours*/, 0/*minutes*/, 0/*seconds*/);
 
 bool isWaterTime(DateTime t) {
   return t.hour() >= 7 and t.hour() <= 18;
@@ -99,7 +99,7 @@ void setup() {
 #endif
 
 #if USE_PUMP
-  nextPumpTime = DateTime(bootTime.unixtime() + PUMP_FIRST_TIME);
+  nextPumpTime = bootTime + firstPumpDelay;
   pinMode(PUMP_PIN, OUTPUT);
   digitalWrite(PUMP_PIN, PUMP_OFF);
 #endif
@@ -113,15 +113,15 @@ void loop()
   // Log Value
   println(Serial, now, F(": "), sensorValue);
 #if USE_SD
-  if (now.unixtime() > nextLogTime.unixtime()) {
-    nextLogTime = DateTime(now.unixtime() + LOG_INTERVAL);
+  if (now > nextLogTime) {
+    nextLogTime = now + logInterval;
     println(logfile, now, F(": "), sensorValue);
   }
 #endif
 
 #if USE_DISPLAY
   clearDisplay();
-  switch ((now.unixtime() - bootTime.unixtime()) / 3 % 6) {
+  switch ((now - bootTime).totalseconds() / 3 % 6) {
     case 0:
       println(display, F("Welcome to:"));
       println(display, F("- Plant Water OS -"));
@@ -151,8 +151,8 @@ void loop()
 #endif
 
 #if USE_PUMP
-  if (now.unixtime() > nextPumpTime.unixtime() and isWaterTime(now)) {
-    nextPumpTime = DateTime(now.unixtime() + PUMP_INTERVAL);
+  if (now > nextPumpTime and isWaterTime(now)) {
+    nextPumpTime = now + pumpInterval;
     numPumpEvents += 1;
 
     clearDisplay();

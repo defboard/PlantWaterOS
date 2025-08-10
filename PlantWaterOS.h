@@ -2,11 +2,6 @@
 #include <Print.h>
 #include <RTClib.h>
 
-#define _SECONDS   (1l)
-#define _MINUTES   (60l * _SECONDS)
-#define _HOURS     (60l * _MINUTES)
-#define _DAYS      (24l * _HOURS)
-
 
 class DevNull : public Print {
   size_t write(uint8_t) final { return 0; };
