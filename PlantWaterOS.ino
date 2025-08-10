@@ -66,6 +66,7 @@ DateTime nextPumpTime;
 int numPumpEvents = 0;
 
 int sensorValue = 0;
+float temperature = 0;
 
 
 void setup() {
@@ -115,19 +116,20 @@ void loop()
 {
   now = rtc.now();
   sensorValue = analogRead(SENSOR_PIN);
+  temperature = rtc.getTemperature();
 
   // Log Value
-  println(Serial, now, F(": "), sensorValue);
+  println(Serial, now, F(": "), sensorValue, F(" "), temperature);
 #if USE_SD
   if (now > nextLogTime) {
     nextLogTime = now + logInterval;
-    println(logfile, now, F(": "), sensorValue);
+    println(logfile, now, F(": "), sensorValue, F(" "), temperature);
   }
 #endif
 
 #if USE_DISPLAY
   clearDisplay();
-  switch ((now - bootTime).totalseconds() / 3 % 6) {
+  switch ((now - bootTime).totalseconds() / 3 % 7) {
     case 0:
       println(display, F("Welcome to:"));
       println(display, F("- Plant Water OS -"));
@@ -137,18 +139,22 @@ void loop()
       println(display, sensorValue);
       break;
     case 2:
+      println(display, F("Temperature:"));
+      println(display, temperature);
+      break;
+    case 3:
       println(display, F("Current time:"));
       println(display, now);
       break;
-    case 3:
+    case 4:
       println(display, F("Next pump time:"));
       println(display, nextPumpTime);
       break;
-    case 4:
+    case 5:
       println(display, F("Online since:"));
       println(display, bootTime);
       break;
-    case 5:
+    case 6:
       println(display, F("Total pump events:"));
       println(display, numPumpEvents);
       break;
