@@ -66,7 +66,7 @@ DateTime nextPumpTime;
 int numPumpEvents = 0;
 
 int sensorValue = 0;
-float temperature = 0;
+int temperature = 0;
 
 
 void setup() {
@@ -116,14 +116,14 @@ void loop()
 {
   now = rtc.now();
   sensorValue = analogRead(SENSOR_PIN);
-  temperature = rtc.getTemperature();
+  temperature = (int) (rtc.getTemperature() * 10);
 
   // Log Value
-  println(Serial, now, F(": "), sensorValue, F(" "), temperature);
+  println(Serial, now, F(": "), sensorValue, F(" "), temperature / 10, F("."), temperature % 10, F("C"));
 #if USE_SD
   if (now > nextLogTime) {
     nextLogTime = now + logInterval;
-    println(logfile, now, F(": "), sensorValue, F(" "), temperature);
+    println(logfile, now, F(": "), sensorValue, F(" "), temperature / 10, F("."), temperature % 10, F("C"));
   }
 #endif
 
@@ -140,7 +140,7 @@ void loop()
       break;
     case 2:
       println(display, F("Temperature:"));
-      println(display, temperature);
+      println(display, temperature / 10, F("."), temperature % 10, F("C"));
       break;
     case 3:
       println(display, F("Current time:"));
