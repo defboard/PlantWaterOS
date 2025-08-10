@@ -89,10 +89,17 @@ void setup() {
   // needed for RTC and display:
   Wire.begin();
   rtc.begin(&Wire);
-  bootTime = DateTime(
-      BUILD_YEAR, BUILD_MONTH, BUILD_DAY,
-      BUILD_HOUR, BUILD_MINUTE, BUILD_SECOND);
-  rtc.adjust(bootTime);
+  const __FlashStringHelper* powerLossMessage;
+  if (rtc.lostPower()) {
+    bootTime = DateTime(
+        BUILD_YEAR, BUILD_MONTH, BUILD_DAY,
+        BUILD_HOUR, BUILD_MINUTE, BUILD_SECOND);
+    rtc.adjust(bootTime);
+    powerLossMessage = F("RTC reset due to power loss");
+  } else {
+    bootTime = rtc.now();
+    powerLossMessage = F("Using existing RTC time");
+  }
 
 #if USE_SD
   if (!SD.begin(SD_CONFIG)) {
@@ -100,9 +107,9 @@ void setup() {
     die();
   }
   nextLogTime = bootTime;
-  logfile << bootTime << F(": system booted") << endl;
+  logfile << bootTime << F(": system booted - ") << powerLossMessage << endl;
 #endif
-  Serial_ << bootTime << F(": system booted") << endl;
+  Serial_ << bootTime << F(": system booted - ") << powerLossMessage << endl;
 
 #if USE_DISPLAY
   if(!display.begin(SSD1306_SWITCHCAPVCC, DISPLAY_ADDRESS, true, false)) {
