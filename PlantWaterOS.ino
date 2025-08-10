@@ -33,8 +33,8 @@ const TimeSpan logInterval    (0/*days*/, 1/*hours*/, 0/*minutes*/, 0/*seconds*/
 const TimeSpan firstPumpDelay (1/*days*/, 0/*hours*/, 0/*minutes*/, 0/*seconds*/);
 const TimeSpan pumpInterval   (3/*days*/, 0/*hours*/, 0/*minutes*/, 0/*seconds*/);
 
-bool isWaterTime(DateTime t) {
-  return t.hour() >= 7 and t.hour() <= 18;
+bool isWaterTime(DateTime) {
+  return true;
 }
 
 # define SPI_CLOCK    SD_SCK_MHZ(40) // 50MHz is maximum but might be unstable
