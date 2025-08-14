@@ -4,7 +4,6 @@
 #define USE_PUMP      1
 
 #include "PlantWaterOS.h"
-#include "buildtime.h"
 
 #include <Wire.h>
 #include <RTClib.h>
@@ -111,14 +110,6 @@ void setup() {
         : F("RTC remained powered"))
     << endl;
 
-  if (digitalRead(BTN_RCV_PIN) == LOW) {
-    bootTime = DateTime(
-        BUILD_YEAR, BUILD_MONTH, BUILD_DAY,
-        BUILD_HOUR, BUILD_MINUTE, BUILD_SECOND);
-    rtc.adjust(bootTime);
-    logfile << bootTime << F(": adjusting RTC due to button press") << endl;
-  }
-
 #if USE_SD
   nextLogTime = bootTime;
 #endif
@@ -145,10 +136,14 @@ int counter = 0;
 int screen = 0;
 int num_screens = 5;
 bool buttonIsPressed = false;
+uint32_t serialInputValue = 0;
+int numberOfDigits = 0;
 
 void loop()
 {
   ++counter;
+  handleSerialInput();
+
   if (digitalRead(BTN_RCV_PIN) == LOW) {
     if (!buttonIsPressed) {
       buttonIsPressed = true;
@@ -166,6 +161,29 @@ void loop()
     dispatchPump() || updateDisplay();
   }
   delay(10);
+}
+
+void handleSerialInput()
+{
+  if (Serial.available()) {
+    char ch = Serial.read();
+    if (ch >= '0' and ch <= '9') {
+      serialInputValue = serialInputValue * 10 + (ch - '0');
+      numberOfDigits += 1;
+    }
+    else if (numberOfDigits > 0) {
+      DateTime oldTime = rtc.now();
+      DateTime newTime = DateTime(serialInputValue);
+      TimeSpan timeDiff = newTime - oldTime;
+      rtc.adjust(newTime);
+
+      bootTime = bootTime + timeDiff;
+      nextLogTime = nextLogTime + timeDiff;
+      nextPumpTime = nextPumpTime + timeDiff;
+      serialInputValue = 0;
+      numberOfDigits = 0;
+    }
+  }
 }
 
 void readSensor()
