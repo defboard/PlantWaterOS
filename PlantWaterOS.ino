@@ -92,13 +92,6 @@ void setup() {
     SD.initErrorHalt(&Serial);
     die();
   }
-  if (SD.fatType() == FAT_TYPE_EXFAT) {
-    print(Serial, F("SD: exFAT"));
-  } else {
-    print(Serial, F("SD: FAT"), int(SD.fatType()));
-  }
-  println(Serial, F(", Card size: "), SD.card()->sectorCount() * 512E-9, F(" GB"));
-
   nextLogTime = bootTime;
   println(logfile, bootTime, F(": system booted"));
 #endif
