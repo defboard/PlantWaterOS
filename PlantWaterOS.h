@@ -2,7 +2,13 @@
 #include <Print.h>
 #include <RTClib.h>
 
-# define endl   "\r\n"
+
+using StreamFormatter = void(Print&);
+
+void endl(Print& out) {
+  out.println();
+  out.flush();
+}
 
 
 class DevNull : public Print {
@@ -84,6 +90,12 @@ Print& operator<< (Print& out, Temperature temperature)
   return out
       << (int)(temperature.degreeCelsius)           << F(".")
       << (int)(temperature.degreeCelsius * 10) % 10 << F("C");
+}
+
+Print& operator<< (Print& out, StreamFormatter f)
+{
+  f(out);
+  return out;
 }
 
 void die()
