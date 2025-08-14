@@ -25,6 +25,9 @@ const int SENSOR_PIN    = A6;
 const int SD_CS_PIN     = 10;
 const int PUMP_PIN      = 6;
 
+const int BTN_OUT_PIN   = A1;
+const int BTN_RCV_PIN   = A3;
+
 const int PUMP_ON       = HIGH;
 const int PUMP_OFF      = 1 - PUMP_ON;
 const int PUMP_DURATION = 2500;     // [ms]
@@ -86,6 +89,10 @@ void setup() {
   Serial.println(F(""));
 #endif
 
+  pinMode(BTN_RCV_PIN, INPUT_PULLUP);
+  pinMode(BTN_OUT_PIN, OUTPUT);
+  digitalWrite(BTN_OUT_PIN, LOW);
+
   // needed for RTC and display:
   Wire.begin();
   rtc.begin(&Wire);
@@ -97,15 +104,19 @@ void setup() {
   }
 #endif
 
-  if (rtc.lostPower()) {
+  bootTime = rtc.now();
+  logfile << bootTime << F(": system booted - ")
+    << (rtc.lostPower()
+        ? F("RTC power loss")
+        : F("RTC remained powered"))
+    << endl;
+
+  if (digitalRead(BTN_RCV_PIN) == LOW) {
     bootTime = DateTime(
         BUILD_YEAR, BUILD_MONTH, BUILD_DAY,
         BUILD_HOUR, BUILD_MINUTE, BUILD_SECOND);
     rtc.adjust(bootTime);
-    logfile << bootTime << F(": system booted - ") << F("RTC reset due to power loss") << endl;
-  } else {
-    bootTime = rtc.now();
-    logfile << bootTime << F(": system booted - ") << F("using stored RTC time") << endl;
+    logfile << bootTime << F(": adjusting RTC due to button press") << endl;
   }
 
 #if USE_SD
@@ -130,7 +141,34 @@ void setup() {
 #endif
 }
 
+int counter = 0;
+int screen = 0;
+int num_screens = 5;
+bool buttonIsPressed = false;
+
 void loop()
+{
+  ++counter;
+  if (digitalRead(BTN_RCV_PIN) == LOW) {
+    if (!buttonIsPressed) {
+      buttonIsPressed = true;
+      screen = (screen + 1) % num_screens;
+      updateDisplay();
+    }
+  }
+  else {
+    buttonIsPressed = false;
+  }
+
+  if (counter % 100 == 0) {
+    counter = 0;
+    readSensor();
+    dispatchPump() || updateDisplay();
+  }
+  delay(10);
+}
+
+void readSensor()
 {
   now = rtc.now();
   sensorValue = analogRead(SENSOR_PIN);
@@ -147,30 +185,40 @@ void loop()
   {
     Serial_ << now << F(": ") << sensorValue << F(" ") << temperature << F(" ") << FreeStack() << "B" << endl;
   }
+}
 
+bool updateDisplay()
+{
 #if USE_DISPLAY
   clearDisplay();
-  switch ((now - bootTime).totalseconds() / 4 % 4) {
+  switch (screen % num_screens) {
     case 0:
+      // show black screen
+      break;
+    case 1:
       display << F("- Plant Water OS -") << endl;
       display << now << endl;
       break;
-    case 1:
+    case 2:
       display << F("Soil moisture: ") << sensorValue << endl;
       display << F("Temperature: ") << temperature << endl;
       break;
-    case 2:
+    case 3:
       display << F("Next pouring: ") << (nextPumpTime - now) << endl;
       display << F("Total pourings: ") << numPumpEvents << endl;
       break;
-    case 3:
+    case 4:
       display << F("Uptime: ") << (now - bootTime) << endl;
       display << F("Free RAM: ") << FreeStack() << F(" Byte") << endl;
       break;
   }
   display.display();
 #endif
+  return true;
+}
 
+bool dispatchPump()
+{
 #if USE_PUMP
   if (now > nextPumpTime and isWaterTime(now)) {
     nextPumpTime = now + pumpInterval;
@@ -191,10 +239,10 @@ void loop()
 
     display << F("DONE..") << endl;
     display.display();
+    return true;
   }
 #endif
-
-  delay(1000);
+  return false;
 }
 
 void clearDisplay() {
