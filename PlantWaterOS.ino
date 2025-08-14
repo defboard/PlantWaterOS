@@ -136,13 +136,10 @@ int counter = 0;
 int screen = 0;
 int num_screens = 5;
 bool buttonIsPressed = false;
-uint32_t serialInputValue = 0;
-int numberOfDigits = 0;
 
 void loop()
 {
   ++counter;
-  handleSerialInput();
 
   if (digitalRead(BTN_RCV_PIN) == LOW) {
     if (!buttonIsPressed) {
@@ -161,29 +158,6 @@ void loop()
     dispatchPump() || updateDisplay();
   }
   delay(10);
-}
-
-void handleSerialInput()
-{
-  if (Serial.available()) {
-    char ch = Serial.read();
-    if (ch >= '0' and ch <= '9') {
-      serialInputValue = serialInputValue * 10 + (ch - '0');
-      numberOfDigits += 1;
-    }
-    else if (numberOfDigits > 0) {
-      DateTime oldTime = rtc.now();
-      DateTime newTime = DateTime(serialInputValue);
-      TimeSpan timeDiff = newTime - oldTime;
-      rtc.adjust(newTime);
-
-      bootTime = bootTime + timeDiff;
-      nextLogTime = nextLogTime + timeDiff;
-      nextPumpTime = nextPumpTime + timeDiff;
-      serialInputValue = 0;
-      numberOfDigits = 0;
-    }
-  }
 }
 
 void readSensor()
