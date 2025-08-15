@@ -150,29 +150,79 @@ void setup() {
 int counter = 0;
 int screen = 0;
 int num_screens = 5;
-bool buttonIsPressed = false;
+bool buttonWasDown = false;
+long buttonDownStart = 0;
 
 void loop()
 {
   ++counter;
 
-  if (digitalRead(BTN_RCV_PIN) == LOW) {
-    if (!buttonIsPressed) {
-      buttonIsPressed = true;
+  if (handleButton()) {
+  }
+  else if (counter % 100 == 0) {
+    counter = 0;
+    readSensor();
+    handlePump() || updateDisplay();
+  }
+  delay(10);
+}
+
+bool handleButton()
+{
+  bool buttonIsDown = digitalRead(BTN_RCV_PIN) == LOW;
+
+  if (buttonIsDown) {
+    if (buttonWasDown)
+    {
+      long buttonDownTime = millis() - buttonDownStart;
+      if (buttonDownTime > 9000)
+      {
+        clearDisplay();
+        display << F("It's over 9000!") << endl;
+      }
+      else if (buttonDownTime > 6000)
+      {
+        clearDisplay();
+        display << F("Pump now!") << endl;
+      }
+      else if (buttonDownTime > 3000)
+      {
+        clearDisplay();
+        display << F("Reset pump timer") << endl;
+      }
+      display.display();
+    }
+    else
+    {
+      buttonDownStart  = millis();
+      buttonWasDown = true;
+    }
+    return true;
+  }
+  else if (buttonWasDown) {
+    now = rtc.now();
+    buttonWasDown = false;
+    long buttonDownTime = millis() - buttonDownStart;
+    if (buttonDownTime > 9000)
+    {
+      // action cancelled; do nothing
+    }
+    else if (buttonDownTime > 6000)
+    {
+      activatePump();
+    }
+    else if (buttonDownTime > 3000)
+    {
+      nextPumpTime = now + firstPumpDelay;
+      writeNextPumpTime(nextPumpTime);
+    }
+    else if (buttonDownTime > 30)
+    {
       screen = (screen + 1) % num_screens;
       updateDisplay();
     }
   }
-  else {
-    buttonIsPressed = false;
-  }
-
-  if (counter % 100 == 0) {
-    counter = 0;
-    readSensor();
-    dispatchPump() || updateDisplay();
-  }
-  delay(10);
+  return false;
 }
 
 DateTime readNextPumpTime()
@@ -261,10 +311,19 @@ bool updateDisplay()
   return true;
 }
 
-bool dispatchPump()
+bool handlePump()
 {
 #if USE_PUMP
   if (now > nextPumpTime and isWaterTime(now)) {
+    activatePump();
+    return true;
+  }
+#endif
+  return false;
+}
+
+void activatePump()
+{
     nextPumpTime = now + pumpInterval;
     writeNextPumpTime(nextPumpTime);
     numPumpEvents += 1;
@@ -284,10 +343,6 @@ bool dispatchPump()
 
     display << F("DONE..") << endl;
     display.display();
-    return true;
-  }
-#endif
-  return false;
 }
 
 void clearDisplay() {
