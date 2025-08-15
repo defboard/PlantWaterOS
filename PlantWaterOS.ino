@@ -69,10 +69,12 @@ NullDisplay display;
 
 #if USE_SD
 LogFile logfile("sensor.log", Serial_);
+DateTime nextLogTime;
 #else
 Print& logfile = Serial_;
 #endif
 
+DateTime nextPumpTime;
 int numPumpEvents = 0;
 
 int sensorValue = 0;
@@ -100,23 +102,16 @@ void setup() {
     die();
   }
 #endif
-  const bool rtcLostPower = rtc.lostPower();
-  if (rtcLostPower) {
-    rtc.adjust(DateTime());   // Reset status
-  }
 
   bootTime = rtc.now();
   logfile << bootTime << F(": system booted - ")
-    << (rtcLostPower
+    << (rtc.lostPower()
         ? F("RTC power loss")
         : F("RTC remained powered"))
     << endl;
 
 #if USE_SD
-  if (rtcLostPower) {
-    rtc.clearAlarm(2);
-    rtc.setAlarm2(bootTime, DS3231_A2_Date);
-  }
+  nextLogTime = bootTime;
 #endif
 
 #if USE_DISPLAY
@@ -131,10 +126,7 @@ void setup() {
 #endif
 
 #if USE_PUMP
-  if (rtcLostPower) {
-    rtc.clearAlarm(1);
-    rtc.setAlarm1(bootTime + firstPumpDelay, DS3231_A1_Date);
-  }
+  nextPumpTime = bootTime + firstPumpDelay;
   pinMode(PUMP_PIN, OUTPUT);
   digitalWrite(PUMP_PIN, PUMP_OFF);
 #endif
@@ -176,9 +168,8 @@ void readSensor()
 
   // Log Value
 #if USE_SD
-  if (rtc.alarmFired(2)) {
-    rtc.clearAlarm(2);
-    rtc.setAlarm2(now + logInterval, DS3231_A2_Date);
+  if (now > nextLogTime) {
+    nextLogTime = now + logInterval;
     logfile << now << F(": ") << sensorValue << F(" ") << temperature << F(" ") << FreeStack() << "B" << endl;
   }
   else
@@ -205,7 +196,7 @@ bool updateDisplay()
       display << F("Temperature: ") << temperature << endl;
       break;
     case 3:
-      display << F("Next pouring: ") << (rtc.getAlarm1() - now) << endl;
+      display << F("Next pouring: ") << (nextPumpTime - now) << endl;
       display << F("Total pourings: ") << numPumpEvents << endl;
       break;
     case 4:
@@ -221,9 +212,8 @@ bool updateDisplay()
 bool dispatchPump()
 {
 #if USE_PUMP
-  if (rtc.alarmFired(1) and isWaterTime(now)) {
-    rtc.clearAlarm(1);
-    rtc.setAlarm1(now + pumpInterval, DS3231_A1_Date);
+  if (now > nextPumpTime and isWaterTime(now)) {
+    nextPumpTime = now + pumpInterval;
     numPumpEvents += 1;
 
     clearDisplay();
