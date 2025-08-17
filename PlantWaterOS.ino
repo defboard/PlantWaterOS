@@ -268,12 +268,12 @@ void readSensor()
 #if USE_SD
   if (now > nextLogTime) {
     nextLogTime = now + logInterval;
-    logfile << now << F(": ") << sensorValue << F(" ") << temperature << F(" ") << FreeStack() << "B" << endl;
+    logfile << now << F(": ") << sensorValue << F(" ") << temperature << F(" ") << FreeStack() << F("B") << endl;
   }
   else
 #endif
   {
-    Serial_ << now << F(": ") << sensorValue << F(" ") << temperature << F(" ") << FreeStack() << "B" << endl;
+    Serial_ << now << F(": ") << sensorValue << F(" ") << temperature << F(" ") << FreeStack() << F("B") << endl;
   }
 }
 
