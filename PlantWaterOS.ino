@@ -4,6 +4,7 @@
 #define USE_PUMP      1
 
 #include "PlantWaterOS.h"
+#include "Button.h"
 
 #include <Wire.h>
 #include <RTClib.h>
@@ -80,6 +81,8 @@ int numPumpEvents = 0;
 int sensorValue = 0;
 Temperature temperature;
 
+Button mainButton(BTN_RCV_PIN);
+
 
 void setup() {
 #if USE_SERIAL
@@ -91,6 +94,7 @@ void setup() {
   pinMode(BTN_RCV_PIN, INPUT_PULLUP);
   pinMode(BTN_OUT_PIN, OUTPUT);
   digitalWrite(BTN_OUT_PIN, LOW);
+  // mainButton.begin();
 
   // needed for RTC and display:
   Wire.begin();
@@ -150,8 +154,6 @@ void setup() {
 int counter = 0;
 int screen = 0;
 int num_screens = 5;
-bool buttonWasDown = false;
-long buttonDownStart = 0;
 
 void loop()
 {
@@ -169,59 +171,53 @@ void loop()
 
 bool handleButton()
 {
-  bool buttonIsDown = digitalRead(BTN_RCV_PIN) == LOW;
+  ButtonEvent event = mainButton.getEvent();
 
-  if (buttonIsDown) {
-    if (buttonWasDown)
+  if (event.type == ButtonEvent::Down) {
+    if (event.millis > 9000)
     {
-      long buttonDownTime = millis() - buttonDownStart;
-      if (buttonDownTime > 9000)
-      {
-        clearDisplay();
-        display << F("It's over 9000!") << endl;
-      }
-      else if (buttonDownTime > 6000)
-      {
-        clearDisplay();
-        display << F("Pump now!") << endl;
-      }
-      else if (buttonDownTime > 3000)
-      {
-        clearDisplay();
-        display << F("Reset pump timer") << endl;
-      }
-      display.display();
+      clearDisplay();
+      display << F("It's over 9000!") << endl;
     }
-    else
+    else if (event.millis > 6000)
     {
-      buttonDownStart  = millis();
-      buttonWasDown = true;
+      clearDisplay();
+      display << F("Pump now!") << endl;
     }
+    else if (event.millis > 3000)
+    {
+      clearDisplay();
+      display << F("Reset pump timer") << endl;
+    }
+    display.display();
+
     return true;
   }
-  else if (buttonWasDown) {
+
+  else if (event.type == ButtonEvent::Release) {
     now = rtc.now();
-    buttonWasDown = false;
-    long buttonDownTime = millis() - buttonDownStart;
-    if (buttonDownTime > 9000)
+    if (event.millis > 9000)
     {
       // action cancelled; do nothing
     }
-    else if (buttonDownTime > 6000)
+    else if (event.millis > 6000)
     {
       activatePump();
     }
-    else if (buttonDownTime > 3000)
+    else if (event.millis > 3000)
     {
       nextPumpTime = now + firstPumpDelay;
       writeNextPumpTime(nextPumpTime);
     }
-    else if (buttonDownTime > 30)
+    else if (event.millis > 30)
     {
       screen = (screen + 1) % num_screens;
       updateDisplay();
     }
+
+    return true;
   }
+
   return false;
 }
 
