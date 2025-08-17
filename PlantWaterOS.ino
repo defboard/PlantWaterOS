@@ -95,6 +95,8 @@ void setup() {
   // needed for RTC and display:
   Wire.begin();
   rtc.begin(&Wire);
+  rtc.disable32K();
+  rtc.writeSqwPinMode(Ds3231SqwPinMode::DS3231_OFF);
 
 #if USE_SD
   if (!SD.begin(SD_CONFIG)) {
@@ -126,7 +128,20 @@ void setup() {
 #endif
 
 #if USE_PUMP
-  nextPumpTime = bootTime + firstPumpDelay;
+  const DateTime storedTime = readNextPumpTime();
+  if (storedTime > bootTime and
+      storedTime < bootTime + pumpInterval)
+  {
+    logfile << F("Using RTC pump timer: ") << storedTime << endl;
+    nextPumpTime = storedTime;
+  }
+  else
+  {
+    logfile << F("Reset RTC pump timer: ") << storedTime << endl;
+    nextPumpTime = bootTime + firstPumpDelay;
+    writeNextPumpTime(nextPumpTime);
+  }
+
   pinMode(PUMP_PIN, OUTPUT);
   digitalWrite(PUMP_PIN, PUMP_OFF);
 #endif
@@ -158,6 +173,43 @@ void loop()
     dispatchPump() || updateDisplay();
   }
   delay(10);
+}
+
+DateTime readNextPumpTime()
+{
+  // The information stored with either one of the alarms is not enough to
+  // reconstruct a complete DateTime:
+  //
+  // Alarm1 only stores DAY/HOUR/MINUTE/SECOND, but not YEAR/MONTH.
+  // Alarm2 only stores DAY/HOUR/MINUTE,        but not YEAR/MONTH/SECOND
+  //
+  // We therefore use both alarms as RTC memory to reconstruct the full
+  // DateTime information:
+  const DateTime alarm1 = rtc.getAlarm1();
+  const DateTime alarm2 = rtc.getAlarm2();
+  return DateTime(
+      alarm2.minute() + 2000,   // use alarm2.minute as year [2000-2059]
+      alarm2.hour(),            // use alarm2.hour as month [0-24]
+      alarm1.day(),
+      alarm1.hour(),
+      alarm1.minute(),
+      alarm1.second()
+  );
+}
+
+void writeNextPumpTime(const DateTime& nextPumpTime)
+{
+  const uint8_t year = nextPumpTime.year();
+  const uint8_t month = nextPumpTime.month();
+  const DateTime& alarm1 = nextPumpTime;
+  const DateTime alarm2(
+      2000, 5,      // year/month is ignored
+      1,            // day is saved, but we currently don't use it
+      month,        // use alarm2.hour as month [0-24]
+      year - 2000,  // use alarm2.minute as as year [2000-2059]
+      0);           // second is ignored
+  rtc.setAlarm1(alarm1, DS3231_A1_Date);
+  rtc.setAlarm2(alarm2, DS3231_A2_Date);
 }
 
 void readSensor()
@@ -214,6 +266,7 @@ bool dispatchPump()
 #if USE_PUMP
   if (now > nextPumpTime and isWaterTime(now)) {
     nextPumpTime = now + pumpInterval;
+    writeNextPumpTime(nextPumpTime);
     numPumpEvents += 1;
 
     clearDisplay();
