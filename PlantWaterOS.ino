@@ -117,7 +117,7 @@ void setup() {
 #endif
 
 #if USE_DISPLAY
-  if(!display.begin(SSD1306_SWITCHCAPVCC, DISPLAY_ADDRESS, true, false)) {
+  if (!display.begin(SSD1306_SWITCHCAPVCC, DISPLAY_ADDRESS, true, false)) {
     Serial_ << F("Display initialization failed.") << endl;
     die();
   }
