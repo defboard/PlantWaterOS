@@ -23,6 +23,18 @@
 #define ENABLE_SENSOR_R1            25
 #define ENABLE_SENSOR_R2            4
 
+const int sensor_pins[] = {
+  SENSOR_L0_CAP_5V,
+  SENSOR_R0_CAP_3V,
+  SENSOR_L1_RES_ALWAYSON,
+  SENSOR_R1_RES_CONTROLLED,
+  SENSOR_R2_WORST_CONTROLLED,
+};
+const int num_sensors = sizeof(sensor_pins) / sizeof(*sensor_pins);
+
+#define SECONDS   (1000L)
+#define MINUTES   (SECONDS * 60)
+
 
 RTC_DS3231 rtc;
 File logfile;
@@ -34,7 +46,6 @@ void setup() {
   }
 
   Serial << F("Init Wire: ") << CheckSuccess(Wire.begin(RTC_SDA, RTC_SCL));
-
   Serial << F("Init RTC: ") << CheckSuccess(rtc.begin(&Wire));
   rtc.disable32K();
   rtc.writeSqwPinMode(Ds3231SqwPinMode::DS3231_OFF);
@@ -48,35 +59,43 @@ void setup() {
   uint32_t cardSize = SD.cardSize() / (1024 * 1024);
   Serial.println("SDCard Size: " + String(cardSize) + "MB");
 
-  logfile = SD.open("/sensors.log", FILE_WRITE);
-
   pinMode(ENABLE_SENSOR_R1, OUTPUT);
   pinMode(ENABLE_SENSOR_R2, OUTPUT);
-  digitalWrite(ENABLE_SENSOR_R1, HIGH);
-  digitalWrite(ENABLE_SENSOR_R2, HIGH);
+  digitalWrite(ENABLE_SENSOR_R1, LOW);
+  digitalWrite(ENABLE_SENSOR_R2, LOW);
 }
 
 
 void loop() {
+  digitalWrite(ENABLE_SENSOR_R1, HIGH);
+  digitalWrite(ENABLE_SENSOR_R2, HIGH);
 
-  DateTime now = rtc.now();
+  if (!logfile) {
+    const bool createFile = true;
+    logfile = SD.open("/sensors.log", FILE_APPEND, createFile);
+  }
+  Serial << "Open logfile: " << CheckSuccess(logfile);
 
-  int sensor_values[5];
-  
-  sensor_values[0] = analogRead(SENSOR_L0_CAP_5V);
-  analogRead(SENSOR_R0_CAP_3V),
-    analogRead(SENSOR_L1_RES_ALWAYSON),
-    analogRead(SENSOR_R1_RES_CONTROLLED),
-    analogRead(SENSOR_R2_WORST_CONTROLLED),
-  };
+  for (int i = 0; i < 20; ++i) {
+    DateTime now = rtc.now();
+    Temperature temp{ rtc.getTemperature() };
+    Serial << now << ": " << temp;
+    logfile << now << ": " << temp;
 
-  Serial << now << ":"
-    << " " << sensor_values[0]
-    << " " << sensor_values[1]
-    << " " << sensor_values[2]
-    << " " << sensor_values[3]
-    << " " << sensor_values[4]
-    << endl;
+    for (int i = 0; i < num_sensors; ++i) {
+      int sensorValue = analogRead(sensor_pins[i]);
+      Serial << " " << sensorValue;
+      logfile << " " << sensorValue;
+      delayMicroseconds(100);
+    }
 
-  delay(1000);
+    Serial << endl;
+    logfile << endl;
+
+    delay(1 * SECONDS);
+  }
+  digitalWrite(ENABLE_SENSOR_R1, LOW);
+  digitalWrite(ENABLE_SENSOR_R2, LOW);
+
+  delay(30 * MINUTES);
 }
