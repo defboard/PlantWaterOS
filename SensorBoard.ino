@@ -85,7 +85,7 @@ void setup()
     Serial.println(F("No SD card attached"));
   }
   uint32_t cardSize = SD.cardSize() / (1024 * 1024);
-  Serial << F("SDCard Size: ") << cardSize << "MB" << endl;
+  Serial << F("SDCard Size: ") << cardSize << F("MB") << endl;
 
   // Init nextLogTime
   bootTime = rtc.now();
@@ -140,18 +140,18 @@ void logSensorReadings()
     const bool createFile = true;
     logfile = SD.open("/sensors.log", FILE_APPEND, createFile);
   }
-  Serial << "Open logfile: " << CheckSuccess(logfile);
+  Serial << F("Open logfile: ") << CheckSuccess(logfile);
 
   for (int i = 0; i < numSensorRepeat; ++i) {
     DateTime now = rtc.now();
     Temperature temp{ (int) rtc.getTemperature() };
-    Serial << now << ": " << temp;
-    logfile << now << ": " << temp;
+    Serial << now << F(": ") << temp;
+    logfile << now << F(": ") << temp;
 
     for (int i = 0; i < NUM_SENSORS; ++i) {
       int sensorValue = analogRead(SENSOR_PINS[i]);
-      Serial << " " << sensorValue;
-      logfile << " " << sensorValue;
+      Serial << F(" ") << sensorValue;
+      logfile << F(" ") << sensorValue;
       delayMicroseconds(100);
     }
 
@@ -179,7 +179,7 @@ void enablePump(bool enable)
 void activatePump()
 {
   numPumpEvents += 1;
-  Serial << now << F(": Pump event ") << numPumpEvents << " (" << PUMP_DURATION << "ms)" << endl;
+  Serial << now << F(": Pump event ") << numPumpEvents << F(" (") << PUMP_DURATION << F("ms)") << endl;
 
   enablePump(true);
   delay(PUMP_DURATION);
