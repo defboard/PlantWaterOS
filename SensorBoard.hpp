@@ -10,7 +10,7 @@ struct Temperature {
 };
 
 struct DoubleDigits {
-  unsigned number;
+  int number;
 };
 
 struct DatePart { DateTime dt; };

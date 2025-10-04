@@ -78,7 +78,7 @@ void loop() {
 
   for (int i = 0; i < 20; ++i) {
     DateTime now = rtc.now();
-    Temperature temp{ rtc.getTemperature() };
+    Temperature temp{ (int) rtc.getTemperature() };
     Serial << now << ": " << temp;
     logfile << now << ": " << temp;
 
