@@ -1,3 +1,4 @@
+#include "LogFile.hpp"
 #include "SensorBoard.hpp"
 
 #include <Wire.h>
@@ -35,6 +36,7 @@ const int NUM_SENSORS = sizeof(SENSOR_PINS) / sizeof(*SENSOR_PINS);
 
 
 // Configuration
+const int SERIAL_BAUD_RATE = 9600;
 const int PUMP_DURATION = 2500;     // [ms]
 
 const TimeSpan firstPumpDelay (1/*days*/, 0/*hours*/, 0/*minutes*/, 0/*seconds*/);
@@ -44,10 +46,9 @@ const TimeSpan logInterval    (0/*days*/, 0/*hours*/, 20/*minutes*/, 0/*seconds*
 const int numSensorRepeat = 20;
 const int delaySensorRepeat = 1000;   // [ms]
 
-
 // Globals
 RTC_DS3231 rtc;
-File logfile;
+LogFile logfile("/sensors.log");
 
 DateTime now;
 DateTime bootTime;
@@ -60,7 +61,7 @@ int numPumpEvents = 0;
 void setup()
 {
   // Init Serial
-  Serial.begin(115200);
+  Serial.begin(SERIAL_BAUD_RATE);
   while (!Serial) {
     // wait for Serial connection
   }
@@ -89,7 +90,8 @@ void setup()
 
   // Init nextLogTime
   bootTime = rtc.now();
-  Serial << bootTime << F(": system booted - ")
+  logfile.open();
+  logfile << bootTime << F(": system booted - ")
     << (rtc.lostPower()
         ? F("RTC power loss")
         : F("RTC remained powered"))
@@ -98,7 +100,7 @@ void setup()
 
   // Init nextPumpTime
   const DateTime storedTime = readNextPumpTime();
-  if (storedTime > bootTime and
+  if (storedTime > bootTime - TimeSpan(1 /* days */) and
       storedTime < bootTime + pumpInterval)
   {
     logfile << F("Using RTC pump timer: ") << storedTime << endl;
@@ -134,28 +136,20 @@ void loop()
 
 void logSensorReadings()
 {
+  logfile.open();
+
   enableSensors(true);
 
-  if (!logfile) {
-    const bool createFile = true;
-    logfile = SD.open("/sensors.log", FILE_APPEND, createFile);
-  }
-  Serial << F("Open logfile: ") << CheckSuccess(logfile);
-
   for (int i = 0; i < numSensorRepeat; ++i) {
-    DateTime now = rtc.now();
     Temperature temp{ (int) rtc.getTemperature() };
-    Serial << now << F(": ") << temp;
-    logfile << now << F(": ") << temp;
+    logfile << now << F(": sensors ") << i << F(" ") << temp;
 
     for (int i = 0; i < NUM_SENSORS; ++i) {
       int sensorValue = analogRead(SENSOR_PINS[i]);
-      Serial << F(" ") << sensorValue;
       logfile << F(" ") << sensorValue;
       delayMicroseconds(100);
     }
 
-    Serial << endl;
     logfile << endl;
 
     delay(delaySensorRepeat);
@@ -178,6 +172,8 @@ void enablePump(bool enable)
 
 void activatePump()
 {
+  logfile.open();
+
   numPumpEvents += 1;
   Serial << now << F(": Pump event ") << numPumpEvents << F(" (") << PUMP_DURATION << F("ms)") << endl;
 
