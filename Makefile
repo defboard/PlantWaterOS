@@ -12,8 +12,9 @@ endif
 
 compile:
 	arduino-cli compile -b $(BOARD) \
-		--build-property 'compiler.cpp.extra_flags="-std=c++11"' \
+		--build-property 'compiler.cpp.extra_flags="-std=c++17"' \
 		--build-property 'compiler.cpp.extra_flags="-Werror"' \
+		--build-property 'compiler.cpp.extra_flags="-Wno-deprecated-copy"' \
 		--warnings all
 
 upload:
