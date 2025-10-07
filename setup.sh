@@ -5,7 +5,7 @@ if [[ -e secure_boot_signing_key.pem ]]; then
     echo "secure_boot_signing_key.pem: Exists"
 else
     echo "secure_boot_signing_key.pem: Creating"
-    ./idf.sh idf.py secure-generate-signing-key --version 2 secure_boot_signing_key.pem
+    ./idf.sh secure-generate-signing-key --version 2 secure_boot_signing_key.pem
 fi
 
 # Wifi credentials
