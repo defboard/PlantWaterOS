@@ -4,3 +4,6 @@
 [submodule "components/Adafruit_BusIO"]
 	path = components/Adafruit_BusIO
 	url = https://github.com/adafruit/Adafruit_BusIO
+[submodule "components/RTClib"]
+	path = components/RTClib
+	url = https://github.com/defboard/RTClib
