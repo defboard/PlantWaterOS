@@ -5,6 +5,8 @@
 #include "Wifi.h"
 
 // Builtin libraries
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
 #include <SD.h>
 #include <WebServer.h>
 #include <Wire.h>
@@ -69,6 +71,8 @@ int numPumpEvents = 0;
 
 
 // Forward declarations
+void handleWebServer(void*);
+void handleOTA(void*);
 void handleBoard();
 void logSensorReadings();
 void enableSensors(bool enable);
@@ -144,14 +148,30 @@ void setup()
 
   ElegantOTA.begin(&server);
   server.begin();
-}
 
+  xTaskCreate(handleWebServer, "Webserver", 4096, NULL, 10, NULL);
+  xTaskCreate(handleOTA, "OTA", 4096, NULL, 10, NULL);
+}
 
 void loop()
 {
-  server.handleClient();
-  ElegantOTA.loop();
   handleBoard();
+}
+
+
+void handleWebServer(void* args)
+{
+  while (true) {
+    server.handleClient();
+  }
+}
+
+
+void handleOTA(void* args)
+{
+  while (true) {
+    ElegantOTA.loop();
+  }
 }
 
 
