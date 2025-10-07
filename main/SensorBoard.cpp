@@ -3,6 +3,9 @@
 #include <WiFi.h>
 #include <WebServer.h>
 
+#include <ElegantOTA.h>
+
+
 WebServer server(80);
 
 
@@ -25,10 +28,12 @@ void setup()
     server.send(200, "text/plain", "Hello from esp32!");
   });
 
+  ElegantOTA.begin(&server);
   server.begin();
 }
 
 void loop()
 {
   server.handleClient();
+  ElegantOTA.loop();
 }
