@@ -207,7 +207,7 @@ void logSensorReadings()
     for (int i = 0; i < NUM_SENSORS; ++i) {
       int sensorValue = analogRead(SENSOR_PINS[i]);
       logfile << F(" ") << sensorValue;
-      delayMicroseconds(100);
+      delay(1);
     }
 
     logfile << endl;
