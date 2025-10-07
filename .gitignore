@@ -1,4 +1,7 @@
 build
 sdkconfig.old
 managed_components
+
+# Credentials:
 main/WifiCredentials.cpp
+secure_boot_signing_key.pem
