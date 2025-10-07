@@ -1,3 +1,6 @@
 [submodule "components/ElegantOTA"]
 	path = components/ElegantOTA
 	url = https://github.com/ayushsharma82/ElegantOTA.git
+[submodule "components/Adafruit_BusIO"]
+	path = components/Adafruit_BusIO
+	url = https://github.com/adafruit/Adafruit_BusIO
