@@ -72,8 +72,7 @@ int numPumpEvents = 0;
 
 
 // Forward declarations
-void handleWebServer(void*);
-void handleOTA(void*);
+void handleServer(void*);
 void handleBoard();
 void logSensorReadings();
 void enableSensors(bool enable);
@@ -149,8 +148,7 @@ void setup()
   ElegantOTA.begin(&server);
   server.begin();
 
-  xTaskCreate(handleWebServer, "Webserver", 4096, NULL, 10, NULL);
-  xTaskCreate(handleOTA, "OTA", 4096, NULL, 10, NULL);
+  xTaskCreatePinnedToCore(handleServer, "server", 4096, NULL, 10, NULL, 0);
 }
 
 void loop()
@@ -159,17 +157,10 @@ void loop()
 }
 
 
-void handleWebServer(void* args)
+void handleServer(void* args)
 {
   while (true) {
     server.handleClient();
-  }
-}
-
-
-void handleOTA(void* args)
-{
-  while (true) {
     ElegantOTA.loop();
   }
 }
