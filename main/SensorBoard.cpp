@@ -8,6 +8,7 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include <SD.h>
+#include <StreamString.h>
 #include <WebServer.h>
 #include <Wire.h>
 
@@ -80,6 +81,7 @@ void enablePump(bool enable);
 void activatePump();
 DateTime readNextPumpTime();
 void writeNextPumpTime(const DateTime& nextPumpTime);
+void onHttpRoot();
 
 
 // Implementation
@@ -142,9 +144,7 @@ void setup()
 
   initWifi();
 
-  server.on("/", []() {
-    server.send(200, "text/plain", "Hello from esp32!");
-  });
+  server.on("/", onHttpRoot);
 
   ElegantOTA.begin(&server);
   server.begin();
@@ -172,6 +172,25 @@ void handleOTA(void* args)
   while (true) {
     ElegantOTA.loop();
   }
+}
+
+
+void onHttpRoot()
+{
+  StreamString response;
+  response << R"(<html>
+<head>
+  <title>SensorBoard</title>
+</head>
+<body>
+  <h1>SensorBoard</h1>
+  <div>Next pump time: )" << nextPumpTime
+  << R"(</div>
+</body>
+</html>
+)";
+
+  server.send(200, "text/html", response);
 }
 
 
