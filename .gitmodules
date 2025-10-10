@@ -7,3 +7,9 @@
 [submodule "components/RTClib"]
 	path = components/RTClib
 	url = https://github.com/defboard/RTClib
+[submodule "components/Adafruit_SSD1306"]
+	path = components/Adafruit_SSD1306
+	url = https://github.com/defboard/Adafruit_SSD1306
+[submodule "components/Adafruit-GFX-Library"]
+	path = components/Adafruit-GFX-Library
+	url = https://github.com/defboard/Adafruit-GFX-Library
