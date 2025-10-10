@@ -1,5 +1,5 @@
 // Local includes
-#include "SensorBoard.hpp"
+#include "WaterPlant.hpp"
 
 #include "LogFile.hpp"
 #include "Wifi.h"
@@ -171,10 +171,10 @@ void onHttpRoot()
   StreamString response;
   response << R"(<html>
 <head>
-  <title>SensorBoard</title>
+  <title>WaterPlant</title>
 </head>
 <body>
-  <h1>SensorBoard</h1>
+  <h1>WaterPlant</h1>
   <div>Next pump time: )" << nextPumpTime
   << R"(</div>
 </body>
