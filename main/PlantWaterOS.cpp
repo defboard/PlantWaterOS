@@ -1,5 +1,5 @@
 // Local includes
-#include "WaterPlant.hpp"
+#include "PlantWaterOS.hpp"
 
 #include "LogFile.hpp"
 #include "Wifi.h"
@@ -171,10 +171,10 @@ void onHttpRoot()
   StreamString response;
   response << R"(<html>
 <head>
-  <title>WaterPlant</title>
+  <title>PlantWaterOS</title>
 </head>
 <body>
-  <h1>WaterPlant</h1>
+  <h1>PlantWaterOS</h1>
   <div>Next pump time: )" << nextPumpTime
   << R"(</div>
 </body>

@@ -31,6 +31,6 @@ void initWifi()
   WiFi.onEvent(onWifiDisconnected, WiFiEvent_t::ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
   WiFi.mode(WIFI_STA);
   WiFi.config(INADDR_NONE, INADDR_NONE, INADDR_NONE, INADDR_NONE);
-  WiFi.setHostname("WaterPlant");
+  WiFi.setHostname("PlantWaterOS");
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 }
