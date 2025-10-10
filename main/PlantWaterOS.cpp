@@ -1,6 +1,7 @@
 // Local includes
 #include "PlantWaterOS.hpp"
 
+#include "Button.h"
 #include "LogFile.hpp"
 #include "Wifi.h"
 
@@ -13,6 +14,7 @@
 #include <Wire.h>
 
 // 3rdparty components
+#include <Adafruit_SSD1306.h>
 #include <ElegantOTA.h>
 #include <RTClib.h>
 
@@ -26,24 +28,11 @@ const int PIN_SD_MISO                     = 21;
 const int PIN_SD_SCLK                     = 19;
 const int PIN_SD_CS                       = 22;
 
-const int PIN_SENSOR_L0_CAP_5V            = 32;
-const int PIN_SENSOR_R0_CAP_3V            = 36;
-const int PIN_SENSOR_L1_RES_ALWAYSON      = 35;
-const int PIN_SENSOR_R1_RES_CONTROLLED    = 39;
-const int PIN_SENSOR_R2_WORST_CONTROLLED  = 34;
-
+const int PIN_SENSOR                      = 39;
 const int PIN_ENABLE_PUMP                 = 26;
-const int PIN_ENABLE_SENSOR_R1            = 25;
-const int PIN_ENABLE_SENSOR_R2            = 4;
 
-const int SENSOR_PINS[] = {
-  PIN_SENSOR_L0_CAP_5V,
-  PIN_SENSOR_R0_CAP_3V,
-  PIN_SENSOR_L1_RES_ALWAYSON,
-  PIN_SENSOR_R1_RES_CONTROLLED,
-  PIN_SENSOR_R2_WORST_CONTROLLED,
-};
-const int NUM_SENSORS = sizeof(SENSOR_PINS) / sizeof(*SENSOR_PINS);
+const int BTN_OUT_PIN   = 25;
+const int BTN_RCV_PIN   = 4;
 
 
 // Configuration
@@ -57,11 +46,22 @@ const TimeSpan logInterval    (0/*days*/, 0/*hours*/, 20/*minutes*/, 0/*seconds*
 const int numSensorRepeat = 20;
 const int delaySensorRepeat = 1000;   // [ms]
 
+// Native display width is W x H = 128 x 64, but we lower resolution
+// to save precious memory:
+const int DISPLAY_WIDTH     = 128;  // OLED display width, in pixels
+const int DISPLAY_HEIGHT    = 16;   // OLED display height, in pixels
+const int DISPLAY_RESET_PIN = -1;   // Reset pin # (or -1 if sharing Arduino reset pin)
+const int DISPLAY_ADDRESS   = 0x3C; // I2C address
+
 // Globals
 WebServer server(80);
 
 RTC_DS3231 rtc;
-LogFile logfile("/sensors.log");
+
+Adafruit_SSD1306 display(DISPLAY_WIDTH, DISPLAY_HEIGHT, &Wire, DISPLAY_RESET_PIN);
+
+
+LogFile logfile("/sensor.log");
 
 DateTime now;
 DateTime bootTime;
@@ -70,17 +70,24 @@ DateTime nextPumpTime;
 
 int numPumpEvents = 0;
 
+int sensorValue = 0;
+Temperature temperature;
+
+Button mainButton(BTN_RCV_PIN);
+
 
 // Forward declarations
 void handleServer(void*);
-void handleBoard();
-void logSensorReadings();
-void enableSensors(bool enable);
+bool handlePump();
+bool handleButton();
+void readSensor();
 void enablePump(bool enable);
 void activatePump();
 DateTime readNextPumpTime();
 void writeNextPumpTime(const DateTime& nextPumpTime);
 void onHttpRoot();
+bool updateDisplay();
+void clearDisplay();
 
 
 // Implementation
@@ -96,10 +103,11 @@ void setup()
 
   // Init control pins
   pinMode(PIN_ENABLE_PUMP, OUTPUT);
-  pinMode(PIN_ENABLE_SENSOR_R1, OUTPUT);
-  pinMode(PIN_ENABLE_SENSOR_R2, OUTPUT);
   enablePump(false);
-  enableSensors(false);
+  pinMode(BTN_RCV_PIN, INPUT_PULLUP);
+  pinMode(BTN_OUT_PIN, OUTPUT);
+  digitalWrite(BTN_OUT_PIN, LOW);
+  // mainButton.begin();
 
   // Init RTC
   Serial << F("Init Wire: ") << CheckSuccess(Wire.begin(PIN_RTC_SDA, PIN_RTC_SCL));
@@ -126,6 +134,14 @@ void setup()
     << endl;
   nextLogTime = bootTime;
 
+  if (!display.begin(SSD1306_SWITCHCAPVCC, DISPLAY_ADDRESS, true, false)) {
+    Serial << "Display initialization failed." << endl;
+  }
+  display.clearDisplay();
+  display.display();
+  display.setTextSize(1);
+  display.setTextColor(SSD1306_WHITE);
+
   // Init nextPumpTime
   const DateTime storedTime = readNextPumpTime();
   if (storedTime > bootTime - TimeSpan(1 /* days */) and
@@ -151,9 +167,23 @@ void setup()
   xTaskCreatePinnedToCore(handleServer, "server", 4096, NULL, 10, NULL, 0);
 }
 
+int counter = 0;
+int screen = 0;
+int num_screens = 5;
+int curSensorRepeat = numSensorRepeat;
+
 void loop()
 {
-  handleBoard();
+  ++counter;
+
+  if (handleButton()) {
+  }
+  else if (counter % 100 == 0) {
+    counter = 0;
+    readSensor();
+    handlePump() || updateDisplay();
+  }
+  delay(10);
 }
 
 
@@ -184,61 +214,62 @@ void onHttpRoot()
   server.send(200, "text/html", response);
 }
 
-
-void handleBoard()
+bool handleButton()
 {
-  now = rtc.now();
+  ButtonEvent event = mainButton.getEvent();
 
-  if (now >= nextLogTime) {
-    nextLogTime = now + logInterval;
-    logSensorReadings();
+  if (event.type == ButtonEvent::Down) {
+    if (event.millis > 9000)
+    {
+      clearDisplay();
+      display << F("It's over 9000!") << endl;
+    }
+    else if (event.millis > 6000)
+    {
+      clearDisplay();
+      display << F("Pump now!") << endl;
+    }
+    else if (event.millis > 3000)
+    {
+      clearDisplay();
+      display << F("Reset pump timer") << endl;
+    }
+    display.display();
+
+    return true;
   }
 
-  if (now >= nextPumpTime) {
-    nextPumpTime = now + pumpInterval;
-    writeNextPumpTime(nextPumpTime);
-    activatePump();
-  }
-
-  delay(1000);
-}
-
-
-void logSensorReadings()
-{
-  logfile.open();
-
-  enableSensors(true);
-
-  for (int i = 0; i < numSensorRepeat; ++i) {
-    Temperature temp{ (int) rtc.getTemperature() };
-    logfile << now << F(": sensors ") << i << F(" ") << temp;
-
-    for (int i = 0; i < NUM_SENSORS; ++i) {
-      int sensorValue = analogRead(SENSOR_PINS[i]);
-      logfile << F(" ") << sensorValue;
-      delay(1);
+  else if (event.type == ButtonEvent::Release) {
+    now = rtc.now();
+    if (event.millis > 9000)
+    {
+      // action cancelled; do nothing
+    }
+    else if (event.millis > 6000)
+    {
+      activatePump();
+    }
+    else if (event.millis > 3000)
+    {
+      nextPumpTime = now + firstPumpDelay;
+      writeNextPumpTime(nextPumpTime);
+    }
+    else if (event.millis > 30)
+    {
+      screen = (screen + 1) % num_screens;
+      updateDisplay();
     }
 
-    logfile << endl;
-
-    delay(delaySensorRepeat);
+    return true;
   }
-  enableSensors(false);
-}
 
-
-void enableSensors(bool enable)
-{
-  digitalWrite(PIN_ENABLE_SENSOR_R1, enable ? HIGH : LOW);
-  digitalWrite(PIN_ENABLE_SENSOR_R2, enable ? HIGH : LOW);
+  return false;
 }
 
 void enablePump(bool enable)
 {
   digitalWrite(PIN_ENABLE_PUMP, enable ? HIGH : LOW);
 }
-
 
 void activatePump()
 {
@@ -247,11 +278,17 @@ void activatePump()
   numPumpEvents += 1;
   Serial << now << F(": Pump event ") << numPumpEvents << F(" (") << PUMP_DURATION << F("ms)") << endl;
 
+  clearDisplay();
+  display << F("PUMPING..") << endl;
+  display.display();
+
   enablePump(true);
   delay(PUMP_DURATION);
   enablePump(false);
-}
 
+  display << F("DONE..") << endl;
+  display.display();
+}
 
 DateTime readNextPumpTime()
 {
@@ -288,4 +325,65 @@ void writeNextPumpTime(const DateTime& nextPumpTime)
       0);           // second is ignored
   rtc.setAlarm1(alarm1, DS3231_A1_Date);
   rtc.setAlarm2(alarm2, DS3231_A2_Date);
+}
+
+void readSensor()
+{
+  now = rtc.now();
+  sensorValue = analogRead(PIN_SENSOR);
+  temperature.degreeCelsius = rtc.getTemperature();
+
+  if (now >= nextLogTime) {
+    nextLogTime = now + logInterval;
+    curSensorRepeat = 0;
+  }
+  if (curSensorRepeat < numSensorRepeat) {
+    logfile.open();
+    logfile << now << ": " << curSensorRepeat << " " << temperature << sensorValue << endl;
+    ++curSensorRepeat;
+  }
+}
+
+bool updateDisplay()
+{
+  clearDisplay();
+  switch (screen % num_screens) {
+    case 0:
+      // show black screen
+      break;
+    case 1:
+      display << F("- Plant Water OS -") << endl;
+      display << now << endl;
+      break;
+    case 2:
+      display << F("Soil moisture: ") << sensorValue << endl;
+      display << F("Temperature: ") << temperature << endl;
+      break;
+    case 3:
+      display << F("Next pouring: ") << (nextPumpTime - now) << endl;
+      display << F("Total pourings: ") << numPumpEvents << endl;
+      break;
+    case 4:
+      display << F("IP: ") << WiFi.localIP() << endl;
+      display << F("Uptime: ") << (now - bootTime) << endl;
+      break;
+  }
+  display.display();
+  return true;
+}
+
+bool handlePump()
+{
+  if (now >= nextPumpTime) {
+    nextPumpTime = now + pumpInterval;
+    writeNextPumpTime(nextPumpTime);
+    activatePump();
+    return true;
+  }
+  return false;
+}
+
+void clearDisplay() {
+  display.clearDisplay();
+  display.setCursor(1, 0);
 }
