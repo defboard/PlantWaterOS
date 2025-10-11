@@ -20,19 +20,18 @@
 
 
 // Pin assignments
-const int PIN_RTC_SDA                     = 27;
-const int PIN_RTC_SCL                     = 14;
+const int PIN_RTC_SDA                     = 33;
+const int PIN_RTC_SCL                     = 32;
 
-const int PIN_SD_MOSI                     = 18;
-const int PIN_SD_MISO                     = 21;
-const int PIN_SD_SCLK                     = 19;
-const int PIN_SD_CS                       = 22;
+const int PIN_SD_MOSI                     = 5;
+const int PIN_SD_MISO                     = 19;
+const int PIN_SD_SCLK                     = 18;
+const int PIN_SD_CS                       = 21;
 
-const int PIN_SENSOR                      = 39;
-const int PIN_ENABLE_PUMP                 = 26;
+const int PIN_SENSOR                      = 35;
+const int PIN_ENABLE_PUMP                 = 4;
 
-const int BTN_OUT_PIN   = 25;
-const int BTN_RCV_PIN   = 4;
+const int BTN_RCV_PIN   = 23;
 
 
 // Configuration
@@ -105,8 +104,6 @@ void setup()
   pinMode(PIN_ENABLE_PUMP, OUTPUT);
   enablePump(false);
   pinMode(BTN_RCV_PIN, INPUT_PULLUP);
-  pinMode(BTN_OUT_PIN, OUTPUT);
-  digitalWrite(BTN_OUT_PIN, LOW);
   // mainButton.begin();
 
   // Init RTC
