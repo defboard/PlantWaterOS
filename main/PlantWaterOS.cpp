@@ -36,7 +36,7 @@ const int BTN_RCV_PIN   = 23;
 
 // Configuration
 const int SERIAL_BAUD_RATE = 9600;
-const int PUMP_DURATION = 2500;     // [ms]
+const int PUMP_DURATION = 2000;     // [ms]
 
 const TimeSpan firstPumpDelay (1/*days*/, 0/*hours*/, 0/*minutes*/, 0/*seconds*/);
 const TimeSpan pumpInterval   (3/*days*/, 0/*hours*/, 0/*minutes*/, 0/*seconds*/);
