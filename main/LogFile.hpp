@@ -4,8 +4,9 @@
 class LogFile : public Print
 {
 public:
-  LogFile(const char* filename)
+  LogFile(const char* filename, Print& print)
     : filename_(filename)
+    , print_(print)
   { }
 
   ~LogFile()
@@ -18,7 +19,7 @@ public:
     if (close || !file_) {
       file_.close();
       file_ = SD.open(filename_, FILE_APPEND, /* create */ true);
-      Serial.println(file_
+      print_.println(file_
         ? F("Open logfile: SUCCESS!")
         : F("Open logfile: FAILED!"));
     }
@@ -27,13 +28,13 @@ public:
 
   size_t write(uint8_t c) final
   {
-    Serial.write(c);
+    print_.write(c);
     return file_.write(c);
   }
 
   size_t write(const uint8_t *buffer, size_t size) final
   {
-    Serial.write(buffer, size);
+    print_.write(buffer, size);
     return file_.write(buffer, size);
   }
 
@@ -44,7 +45,7 @@ public:
 
   void flush() final
   {
-    Serial.flush();
+    print_.flush();
     file_.flush();
   }
 
@@ -61,4 +62,5 @@ public:
 private:
   const char* filename_;
   File file_;
+  Print& print_;
 };
