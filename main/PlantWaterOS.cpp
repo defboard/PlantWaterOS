@@ -59,8 +59,8 @@ RTC_DS3231 rtc;
 
 Adafruit_SSD1306 display(DISPLAY_WIDTH, DISPLAY_HEIGHT, &Wire, DISPLAY_RESET_PIN);
 
-StreamString fullSystemLog;
-LogFile logfile("/sensor.log", fullSystemLog);
+StreamString eventLog;
+LogFile logfile("/sensor.log", Serial);
 
 DateTime now;
 DateTime bootTime;
@@ -85,7 +85,7 @@ void activatePump();
 DateTime readNextPumpTime();
 void writeNextPumpTime(const DateTime& nextPumpTime);
 void onHttpRoot();
-void onHttpLog();
+void onHttpEventLog();
 bool updateDisplay();
 void clearDisplay();
 
@@ -101,8 +101,6 @@ void setup()
   }
   Serial.println();
 
-  fullSystemLog.reserve(64000);
-
   // Init control pins
   pinMode(PIN_ENABLE_PUMP, OUTPUT);
   enablePump(false);
@@ -110,19 +108,19 @@ void setup()
   // mainButton.begin();
 
   // Init RTC
-  fullSystemLog << F("Init Wire: ") << CheckSuccess(Wire.begin(PIN_RTC_SDA, PIN_RTC_SCL));
-  fullSystemLog << F("Init RTC: ") << CheckSuccess(rtc.begin(&Wire));
+  eventLog << F("Init Wire: ") << CheckSuccess(Wire.begin(PIN_RTC_SDA, PIN_RTC_SCL));
+  eventLog << F("Init RTC: ") << CheckSuccess(rtc.begin(&Wire));
   rtc.disable32K();
   rtc.writeSqwPinMode(Ds3231SqwPinMode::DS3231_OFF);
 
   // Init SD
-  fullSystemLog << F("Init SPI: ") << CheckSuccess(SPI.begin(PIN_SD_SCLK, PIN_SD_MISO, PIN_SD_MOSI, PIN_SD_CS));
-  fullSystemLog << F("Init SD: ") << CheckSuccess(SD.begin(PIN_SD_CS, SPI));
+  eventLog << F("Init SPI: ") << CheckSuccess(SPI.begin(PIN_SD_SCLK, PIN_SD_MISO, PIN_SD_MOSI, PIN_SD_CS));
+  eventLog << F("Init SD: ") << CheckSuccess(SD.begin(PIN_SD_CS, SPI));
   if (SD.cardType() == CARD_NONE) {
-    fullSystemLog.println(F("No SD card attached"));
+    eventLog.println(F("No SD card attached"));
   }
   uint32_t cardSize = SD.cardSize() / (1024 * 1024);
-  fullSystemLog << F("SDCard Size: ") << cardSize << F("MB") << endl;
+  eventLog << F("SDCard Size: ") << cardSize << F("MB") << endl;
 
   // Init nextLogTime
   bootTime = rtc.now();
@@ -135,7 +133,7 @@ void setup()
   nextLogTime = bootTime;
 
   if (!display.begin(SSD1306_SWITCHCAPVCC, DISPLAY_ADDRESS, true, false)) {
-    fullSystemLog << "Display initialization failed." << endl;
+    eventLog << "Display initialization failed." << endl;
   }
   display.clearDisplay();
   display.display();
@@ -160,7 +158,7 @@ void setup()
   initWifi();
 
   server.on("/", onHttpRoot);
-  server.on("/log", onHttpLog);
+  server.on("/eventlog", onHttpEventLog);
 
   ElegantOTA.begin(&server);
   server.begin();
@@ -215,9 +213,9 @@ void onHttpRoot()
   server.send(200, "text/html", response);
 }
 
-void onHttpLog()
+void onHttpEventLog()
 {
-  server.send(200, "text/plain", fullSystemLog);
+  server.send(200, "text/plain", eventLog);
 }
 
 bool handleButton()
@@ -282,7 +280,7 @@ void activatePump()
   logfile.open();
 
   numPumpEvents += 1;
-  fullSystemLog << now << F(": Pump event ") << numPumpEvents << F(" (") << PUMP_DURATION << F("ms)") << endl;
+  eventLog << now << F(": Pump event ") << numPumpEvents << F(" (") << PUMP_DURATION << F("ms)") << endl;
 
   clearDisplay();
   display << F("PUMPING..") << endl;
