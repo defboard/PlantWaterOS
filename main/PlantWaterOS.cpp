@@ -45,10 +45,10 @@ const TimeSpan logInterval    (0/*days*/, 0/*hours*/, 20/*minutes*/, 0/*seconds*
 const int numSensorRepeat = 20;
 const int delaySensorRepeat = 1000;   // [ms]
 
-// Native display width is W x H = 128 x 64, but we lower resolution
-// to save precious memory:
+// Native display width is W x H = 128 x 64:
 const int DISPLAY_WIDTH     = 128;  // OLED display width, in pixels
-const int DISPLAY_HEIGHT    = 16;   // OLED display height, in pixels
+const int DISPLAY_HEIGHT    = 64;   // OLED display height, in pixels
+const int LINE_HEIGHT       = 16;   // 8 * textHeight
 const int DISPLAY_RESET_PIN = -1;   // Reset pin # (or -1 if sharing Arduino reset pin)
 const int DISPLAY_ADDRESS   = 0x3C; // I2C address
 
@@ -87,7 +87,7 @@ void writeNextPumpTime(const DateTime& nextPumpTime);
 void onHttpRoot();
 void onHttpEventLog();
 bool updateDisplay();
-void clearDisplay();
+void clearDisplayLines(int firstLine, int num=1);
 
 
 // Implementation
@@ -137,7 +137,7 @@ void setup()
   }
   display.clearDisplay();
   display.display();
-  display.setTextSize(1);
+  display.setTextSize(1, 2);
   display.setTextColor(SSD1306_WHITE);
 
   // Init nextPumpTime
@@ -225,17 +225,17 @@ bool handleButton()
   if (event.type == ButtonEvent::Down) {
     if (event.millis > 9000)
     {
-      clearDisplay();
+      clearDisplayLines(4);
       display << F("It's over 9000!") << endl;
     }
     else if (event.millis > 6000)
     {
-      clearDisplay();
+      clearDisplayLines(4);
       display << F("Pump now!") << endl;
     }
     else if (event.millis > 3000)
     {
-      clearDisplay();
+      clearDisplayLines(4);
       display << F("Reset pump timer") << endl;
     }
     display.display();
@@ -282,15 +282,15 @@ void activatePump()
   numPumpEvents += 1;
   eventLog << now << F(": Pump event ") << numPumpEvents << F(" (") << PUMP_DURATION << F("ms)") << endl;
 
-  clearDisplay();
-  display << F("PUMPING..") << endl;
+  clearDisplayLines(4);
+  display << "PUMPING...";
   display.display();
 
   enablePump(true);
   delay(PUMP_DURATION);
   enablePump(false);
 
-  display << F("DONE..") << endl;
+  display << " DONE" << endl;
   display.display();
 }
 
@@ -350,7 +350,7 @@ void readSensor()
 
 bool updateDisplay()
 {
-  clearDisplay();
+  clearDisplayLines(1, 2);
   switch (screen % num_screens) {
     case 0:
       // show black screen
@@ -387,7 +387,8 @@ bool handlePump()
   return false;
 }
 
-void clearDisplay() {
-  display.clearDisplay();
-  display.setCursor(1, 0);
+void clearDisplayLines(int line, int num)
+{
+  display.fillRect(0, (line - 1) * LINE_HEIGHT, DISPLAY_WIDTH, LINE_HEIGHT * num, SSD1306_BLACK);
+  display.setCursor(1, (line - 1) * LINE_HEIGHT);
 }
