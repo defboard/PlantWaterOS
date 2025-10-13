@@ -163,7 +163,7 @@ void setup()
   ElegantOTA.begin(&server);
   server.begin();
 
-  xTaskCreatePinnedToCore(handleServer, "server", 4096, NULL, 10, NULL, 0);
+  xTaskCreatePinnedToCore(handleServer, "server", 4096, NULL, 1, NULL, 0);
 }
 
 int counter = 0;
