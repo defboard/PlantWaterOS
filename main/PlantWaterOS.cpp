@@ -175,12 +175,15 @@ void loop()
 {
   ++counter;
 
-  if (handleButton()) {
-  }
-  else if (counter % 100 == 0) {
+  bool blockPump = handleButton();
+
+  if (counter % 100 == 0) {
     counter = 0;
     readSensor();
-    handlePump() || updateDisplay();
+    if (not blockPump) {
+      handlePump();
+    }
+    updateDisplay();
   }
   delay(10);
 }
