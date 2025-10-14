@@ -20,18 +20,18 @@
 
 
 // Pin assignments
-const int PIN_RTC_SDA                     = 33;
-const int PIN_RTC_SCL                     = 32;
+const int PIN_RTC_SDA       = 33;
+const int PIN_RTC_SCL       = 32;
 
-const int PIN_SD_MOSI                     = 5;
-const int PIN_SD_MISO                     = 19;
-const int PIN_SD_SCLK                     = 18;
-const int PIN_SD_CS                       = 21;
+const int PIN_SD_MOSI       = 5;
+const int PIN_SD_MISO       = 19;
+const int PIN_SD_SCLK       = 18;
+const int PIN_SD_CS         = 21;
 
-const int PIN_SENSOR                      = 35;
-const int PIN_ENABLE_PUMP                 = 4;
+const int PIN_SENSOR        = 35;
+const int PIN_ENABLE_PUMP   = 4;
 
-const int BTN_RCV_PIN   = 23;
+const int BTN_RCV_PIN       = 23;
 
 
 // Configuration
