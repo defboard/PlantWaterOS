@@ -3,7 +3,6 @@
 - prevent race conditions using event queue + mutexes
     - pump on + reboot
     - log file read + write
-    - pump on + sensor readings -> allow
 
 
 # Time

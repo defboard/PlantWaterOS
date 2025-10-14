@@ -7,6 +7,7 @@
 
 // Builtin libraries
 #include <freertos/FreeRTOS.h>
+#include <freertos/queue.h>
 #include <freertos/task.h>
 #include <SD.h>
 #include <StreamString.h>
@@ -56,6 +57,23 @@ const int LINE_HEIGHT       = 16;   // 8 * textHeight
 const int DISPLAY_RESET_PIN = -1;   // Reset pin # (or -1 if sharing Arduino reset pin)
 const int DISPLAY_ADDRESS   = 0x3C; // I2C address
 
+
+enum class MessageType {
+  ScreenRefresh,
+  ScreenCycleNext,
+  ScreenCyclePrev,
+  ScreenInfoLine,
+  PumpStart,
+  PumpStop,
+  PumpTimerReset,
+  SensorRead,
+};
+struct DeviceOperationMessage {
+  MessageType type;
+  const void* data;
+};
+
+
 // Globals
 WebServer server(80);
 
@@ -79,21 +97,25 @@ Temperature temperature;
 Button mainButton(BTN_RCV_PIN);
 Button stickButton(PIN_STICK_BTN);
 
+QueueHandle_t opMessageQueue = NULL;
+
 
 // Forward declarations
 void handleServer(void*);
-bool handlePump();
 bool handleButton(ButtonEvent event);
 void handleJoystick();
 void readSensor();
 void enablePump(bool enable);
-void activatePump();
 DateTime readNextPumpTime();
 void writeNextPumpTime(const DateTime& nextPumpTime);
 void onHttpRoot();
 void onHttpEventLog();
-bool updateDisplay();
 void clearDisplayLines(int firstLine, int num=1);
+void opMessageTask(void*);
+bool sendMessage(
+    MessageType type,
+    const void* data=nullptr,
+    TickType_t waitTime=portMAX_DELAY);
 
 
 // Implementation
@@ -172,6 +194,9 @@ void setup()
   ElegantOTA.begin(&server);
   server.begin();
 
+  // Should not need more than a couple (4) entries, because this task has priority on core 1.
+  opMessageQueue = xQueueCreate(4, sizeof(DeviceOperationMessage));
+  xTaskCreatePinnedToCore(opMessageTask, "operations", 4096, NULL, 2, NULL, 1);
   xTaskCreatePinnedToCore(handleServer, "server", 4096, NULL, 1, NULL, 0);
 }
 
@@ -180,23 +205,40 @@ int screen = 0;
 int num_screens = 5;
 int curSensorRepeat = numSensorRepeat;
 
+bool pumpIsStarted = false;
+TickType_t pumpStartTick = 0;
+
 void loop()
 {
   ++counter;
 
+  // TODO: critical section to deal with race condition
+  if (pumpIsStarted) {
+    // pumpStartTick can be compared to xTaskGetTickCount() because we are
+    // running on same core as the message processing task.
+    if (xTaskGetTickCount() - pumpStartTick > pdMS_TO_TICKS(PUMP_DURATION)) {
+      sendMessage(MessageType::PumpStop);
+    }
+  }
+
   ButtonEvent btn1 = mainButton.getEvent();
   ButtonEvent btn2 = stickButton.getEvent();
 
-  bool blockPump = handleButton(btn1) or handleButton(btn2);
-  handleJoystick();
+  bool buttonIsPressed = handleButton(btn1) or handleButton(btn2);
+  if (not buttonIsPressed) {
+    handleJoystick();
+  }
 
   if (counter % 100 == 0) {
     counter = 0;
-    readSensor();
-    if (not blockPump) {
-      handlePump();
+    sendMessage(MessageType::SensorRead);
+    sendMessage(MessageType::ScreenRefresh);
+
+    if (not buttonIsPressed and not pumpIsStarted) {
+      if (now >= nextPumpTime) {
+        sendMessage(MessageType::PumpStart);
+      }
     }
-    updateDisplay();
   }
   delay(10);
 }
@@ -237,51 +279,46 @@ void onHttpEventLog()
 bool handleButton(ButtonEvent event)
 {
   if (event.type == ButtonEvent::Down) {
-    clearDisplayLines(4);
     if (event.millis > 9000)
     {
       if (event.prevMillis <= 9000) {
-        display << "It's over 9000!" << endl;
+        sendMessage(MessageType::ScreenInfoLine, "It's over 9000!");
       }
     }
     else if (event.millis > 6000)
     {
       if (event.prevMillis <= 6000) {
-        display << "Pump now!" << endl;
+        sendMessage(MessageType::ScreenInfoLine, "Pump now!");
       }
     }
     else if (event.millis > 3000)
     {
       if (event.prevMillis <= 3000) {
-        display << "Reset pump timer" << endl;
+        sendMessage(MessageType::ScreenInfoLine, "Reset pump timer");
       }
     }
-    display.display();
 
     return true;
   }
 
   else if (event.type == ButtonEvent::Release) {
-    clearDisplayLines(4);
+    sendMessage(MessageType::ScreenInfoLine, "");
 
-    now = rtc.now();
     if (event.millis > 9000)
     {
       // action cancelled; do nothing
     }
     else if (event.millis > 6000)
     {
-      activatePump();
+      sendMessage(MessageType::PumpStart);
     }
     else if (event.millis > 3000)
     {
-      nextPumpTime = now + firstPumpDelay;
-      writeNextPumpTime(nextPumpTime);
+      sendMessage(MessageType::PumpTimerReset);
     }
     else if (event.millis > 30)
     {
-      screen = (screen + 1) % num_screens;
-      updateDisplay();
+      sendMessage(MessageType::ScreenCycleNext);
     }
 
     return true;
@@ -327,9 +364,11 @@ void handleJoystick()
     old_xtick = tick;
     old_xdir = new_xdir;
 
-    if (new_xdir != 0) {
-      screen = (screen + num_screens + new_xdir) % num_screens;
-      updateDisplay();
+    if (new_xdir == -1) {
+      sendMessage(MessageType::ScreenCyclePrev);
+    }
+    else if (new_xdir == 1) {
+      sendMessage(MessageType::ScreenCycleNext);
     }
   }
 
@@ -340,39 +379,15 @@ void handleJoystick()
     old_ytick = tick;
     old_ydir = new_ydir;
 
-    clearDisplayLines(4);
-    if (new_ydir < 0) {
-      display << "Up!";
-    }
-    else if (new_ydir > 0) {
-      display << "Down!";
-    }
-    display.display();
+    sendMessage(MessageType::ScreenInfoLine,
+        new_ydir < 0 ? "Up!" :
+        new_ydir > 0 ? "Down!" : "");
   }
 }
 
 void enablePump(bool enable)
 {
   digitalWrite(PIN_ENABLE_PUMP, enable ? HIGH : LOW);
-}
-
-void activatePump()
-{
-  logfile.open();
-
-  numPumpEvents += 1;
-  eventLog << now << F(": Pump event ") << numPumpEvents << F(" (") << PUMP_DURATION << F("ms)") << endl;
-
-  clearDisplayLines(4);
-  display << "PUMPING...";
-  display.display();
-
-  enablePump(true);
-  delay(PUMP_DURATION);
-  enablePump(false);
-
-  display << " DONE" << endl;
-  display.display();
 }
 
 DateTime readNextPumpTime()
@@ -432,7 +447,7 @@ void readSensor()
 bool updateDisplay()
 {
   clearDisplayLines(1, 2);
-  switch (screen % num_screens) {
+  switch (screen) {
     case 0:
       // show black screen
       break;
@@ -457,15 +472,100 @@ bool updateDisplay()
   return true;
 }
 
-bool handlePump()
+bool sendMessage(MessageType type, const void* data, TickType_t waitTime)
 {
-  if (now >= nextPumpTime) {
-    nextPumpTime = now + pumpInterval;
-    writeNextPumpTime(nextPumpTime);
-    activatePump();
-    return true;
+  const DeviceOperationMessage message { type, data };
+  return xQueueSend(opMessageQueue, &message, waitTime) == pdPASS;
+}
+
+int wrapRange(int num, int range_min, int range_max)
+{
+  if (num < range_min) {
+    return range_max;
   }
-  return false;
+  if (num > range_max) {
+    return range_min;
+  }
+  return num;
+}
+
+void dispatchMessage(DeviceOperationMessage message)
+{
+  switch (message.type) {
+
+    case MessageType::ScreenRefresh:
+      if (screen != 0) {
+        updateDisplay();
+      }
+      break;
+
+    case MessageType::ScreenCyclePrev:
+      screen = wrapRange(screen - 1, 0, num_screens - 1);
+      updateDisplay();
+      break;
+
+    case MessageType::ScreenCycleNext:
+      screen = wrapRange(screen + 1, 0, num_screens - 1);
+      updateDisplay();
+      break;
+
+    case MessageType::ScreenInfoLine:
+      clearDisplayLines(4);
+      display << ((const char*) message.data);
+      display.display();
+      break;
+
+    case MessageType::PumpStart:
+      if (pumpIsStarted) {
+        break;
+      }
+      pumpStartTick = xTaskGetTickCount();
+      pumpIsStarted = true;
+
+      now = rtc.now();
+      nextPumpTime = now + pumpInterval;
+      writeNextPumpTime(nextPumpTime);
+
+      numPumpEvents += 1;
+      logfile.open();
+      eventLog << now << F(": Pump event ") << numPumpEvents << F(" (") << PUMP_DURATION << F("ms)") << endl;
+
+      clearDisplayLines(4);
+      display << "PUMPING...";
+      display.display();
+
+      enablePump(true);
+      break;
+
+    case MessageType::PumpStop:
+      enablePump(false);
+      pumpIsStarted = false;
+
+      clearDisplayLines(4);
+      display.display();
+      break;
+
+    case MessageType::PumpTimerReset:
+      now = rtc.now();
+      nextPumpTime = now + firstPumpDelay;
+      writeNextPumpTime(nextPumpTime);
+      break;
+
+    case MessageType::SensorRead:
+      readSensor();
+      break;
+
+  };
+}
+
+void opMessageTask(void* args)
+{
+  DeviceOperationMessage message;
+  while (true) {
+    if (xQueueReceive(opMessageQueue, &message, portMAX_DELAY)) {
+      dispatchMessage(message);
+    }
+  }
 }
 
 void clearDisplayLines(int line, int num)
@@ -473,3 +573,5 @@ void clearDisplayLines(int line, int num)
   display.fillRect(0, (line - 1) * LINE_HEIGHT, DISPLAY_WIDTH, LINE_HEIGHT * num, SSD1306_BLACK);
   display.setCursor(1, (line - 1) * LINE_HEIGHT);
 }
+
+// vim: sw=2 ts=2 sts=2
