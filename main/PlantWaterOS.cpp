@@ -98,6 +98,7 @@ Button mainButton(BTN_RCV_PIN);
 Button stickButton(PIN_STICK_BTN);
 
 QueueHandle_t opMessageQueue = NULL;
+TickType_t loopLastWakeTime = 0;
 
 
 // Forward declarations
@@ -198,6 +199,8 @@ void setup()
   opMessageQueue = xQueueCreate(4, sizeof(DeviceOperationMessage));
   xTaskCreatePinnedToCore(opMessageTask, "operations", 4096, NULL, 2, NULL, 1);
   xTaskCreatePinnedToCore(handleServer, "server", 4096, NULL, 1, NULL, 0);
+
+  loopLastWakeTime = xTaskGetTickCount();
 }
 
 int counter = 0;
@@ -240,7 +243,8 @@ void loop()
       }
     }
   }
-  delay(10);
+
+  vTaskDelayUntil(&loopLastWakeTime, pdMS_TO_TICKS(10));
 }
 
 
