@@ -237,19 +237,17 @@ void onHttpEventLog()
 bool handleButton(ButtonEvent event)
 {
   if (event.type == ButtonEvent::Down) {
+    clearDisplayLines(4);
     if (event.millis > 9000)
     {
-      clearDisplayLines(4);
       display << F("It's over 9000!") << endl;
     }
     else if (event.millis > 6000)
     {
-      clearDisplayLines(4);
       display << F("Pump now!") << endl;
     }
     else if (event.millis > 3000)
     {
-      clearDisplayLines(4);
       display << F("Reset pump timer") << endl;
     }
     display.display();
@@ -258,6 +256,8 @@ bool handleButton(ButtonEvent event)
   }
 
   else if (event.type == ButtonEvent::Release) {
+    clearDisplayLines(4);
+
     now = rtc.now();
     if (event.millis > 9000)
     {
