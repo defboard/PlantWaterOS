@@ -240,15 +240,21 @@ bool handleButton(ButtonEvent event)
     clearDisplayLines(4);
     if (event.millis > 9000)
     {
-      display << F("It's over 9000!") << endl;
+      if (event.prevMillis <= 9000) {
+        display << "It's over 9000!" << endl;
+      }
     }
     else if (event.millis > 6000)
     {
-      display << F("Pump now!") << endl;
+      if (event.prevMillis <= 6000) {
+        display << "Pump now!" << endl;
+      }
     }
     else if (event.millis > 3000)
     {
-      display << F("Reset pump timer") << endl;
+      if (event.prevMillis <= 3000) {
+        display << "Reset pump timer" << endl;
+      }
     }
     display.display();
 

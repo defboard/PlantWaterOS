@@ -11,7 +11,7 @@ struct ButtonEvent
   };
 
   EventType type;
-  long millis;
+  long millis, prevMillis;
 };
 
 
@@ -39,17 +39,20 @@ public:
       ? (wasDown_ ? ButtonEvent::Down : ButtonEvent::Press)
       : (wasDown_ ? ButtonEvent::Release : ButtonEvent::Up);
     event.millis = now - lastStateChangeTime_;
+    event.prevMillis = lastEventTime_ - lastStateChangeTime_;
 
     if (wasDown_ != isDown) {
       wasDown_ = isDown;
       lastStateChangeTime_ = now;
     }
 
+    lastEventTime_ = now;
     return event;
   }
 
 private:
   long lastStateChangeTime_ = 0;
+  long lastEventTime_ = 0;
   bool wasDown_ = false;
   uint8_t pin_;
 };
