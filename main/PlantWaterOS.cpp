@@ -99,6 +99,10 @@ Button stickButton(PIN_STICK_BTN);
 
 QueueHandle_t opMessageQueue = NULL;
 TickType_t loopLastWakeTime = 0;
+TimerHandle_t pumpStopTimer;
+
+// Defined by arduino core
+extern TaskHandle_t loopTaskHandle;
 
 
 // Forward declarations
@@ -113,6 +117,7 @@ void onHttpRoot();
 void onHttpEventLog();
 void clearDisplayLines(int firstLine, int num=1);
 void opMessageTask(void*);
+void onPumpStopTimer(TimerHandle_t);
 bool sendMessage(
     MessageType type,
     const void* data=nullptr,
@@ -195,6 +200,12 @@ void setup()
   ElegantOTA.begin(&server);
   server.begin();
 
+  pumpStopTimer = xTimerCreate(
+      "pumpStop", pdMS_TO_TICKS(PUMP_DURATION),
+      /* xAutoReload */ pdFALSE,
+      /* pvTimerID */ (void*) loopTaskHandle,
+      onPumpStopTimer);
+
   // Should not need more than a couple (4) entries, because this task has priority on core 1.
   opMessageQueue = xQueueCreate(4, sizeof(DeviceOperationMessage));
   xTaskCreatePinnedToCore(opMessageTask, "operations", 4096, NULL, 2, NULL, 1);
@@ -209,19 +220,13 @@ int num_screens = 5;
 int curSensorRepeat = numSensorRepeat;
 
 bool pumpIsStarted = false;
-TickType_t pumpStartTick = 0;
 
 void loop()
 {
   ++counter;
 
-  // TODO: critical section to deal with race condition
-  if (pumpIsStarted) {
-    // pumpStartTick can be compared to xTaskGetTickCount() because we are
-    // running on same core as the message processing task.
-    if (xTaskGetTickCount() - pumpStartTick > pdMS_TO_TICKS(PUMP_DURATION)) {
-      sendMessage(MessageType::PumpStop);
-    }
+  if (ulTaskNotifyTake(/* xClearCountOnExit */ pdTRUE, /* xTicksToWait */ 0)) {
+    sendMessage(MessageType::PumpStop, nullptr, portMAX_DELAY);
   }
 
   ButtonEvent btn1 = mainButton.getEvent();
@@ -237,7 +242,7 @@ void loop()
     sendMessage(MessageType::SensorRead);
     sendMessage(MessageType::ScreenRefresh);
 
-    if (not buttonIsPressed and not pumpIsStarted) {
+    if (not buttonIsPressed) {
       if (now >= nextPumpTime) {
         sendMessage(MessageType::PumpStart);
       }
@@ -476,6 +481,11 @@ bool updateDisplay()
   return true;
 }
 
+void onPumpStopTimer(TimerHandle_t timer)
+{
+  xTaskNotifyGive((TaskHandle_t) pvTimerGetTimerID(timer));
+}
+
 bool sendMessage(MessageType type, const void* data, TickType_t waitTime)
 {
   const DeviceOperationMessage message { type, data };
@@ -523,8 +533,12 @@ void dispatchMessage(DeviceOperationMessage message)
       if (pumpIsStarted) {
         break;
       }
-      pumpStartTick = xTaskGetTickCount();
       pumpIsStarted = true;
+      if (not xTimerStart(pumpStopTimer, 10)) {
+        // Failed to schedule the PumpStop event, so it is not safe to continue;
+        pumpIsStarted = false;
+        break;
+      }
 
       now = rtc.now();
       nextPumpTime = now + pumpInterval;
