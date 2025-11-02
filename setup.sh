@@ -17,7 +17,7 @@ else
     read -r -p 'Enter password:  ' WIFI_PASSWORD
 
 	cat >main/WifiCredentials.cpp <<EOF
-#include "WifiCredentials.h"
+#include "WifiCredentials.hpp"
 
 const char* const WIFI_SSID = "$WIFI_SSID";
 const char* const WIFI_PASSWORD = "$WIFI_PASSWORD";

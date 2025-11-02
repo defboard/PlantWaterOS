@@ -1,5 +1,5 @@
-#include "Wifi.h"
-#include "WifiCredentials.h"
+#include "Wifi.hpp"
+#include "WifiCredentials.hpp"
 
 #include <WiFi.h>
 

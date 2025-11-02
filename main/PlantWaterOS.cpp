@@ -1,9 +1,9 @@
 // Local includes
 #include "PlantWaterOS.hpp"
 
-#include "Button.h"
+#include "Button.hpp"
 #include "LogFile.hpp"
-#include "Wifi.h"
+#include "Wifi.hpp"
 
 // Builtin libraries
 #include <freertos/FreeRTOS.h>
