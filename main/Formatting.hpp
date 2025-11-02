@@ -1,13 +1,11 @@
 #pragma once
+#include "PlantWaterOS.hpp"
+
 #include <Print.h>
 #include <RTClib.h>
 
 
 using StreamFormatter = void(Print&);
-
-struct Temperature {
-  int degreeCelsius;
-};
 
 struct DoubleDigits {
   int number;

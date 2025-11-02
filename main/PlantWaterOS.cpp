@@ -1,21 +1,22 @@
 // Local includes
+#include "PlantWaterOS.hpp"
+
 #include "Button.hpp"
 #include "Formatting.hpp"
 #include "LogFile.hpp"
 #include "Wifi.hpp"
+#include "Server.hpp"
 
 // Builtin libraries
 #include <freertos/FreeRTOS.h>
 #include <freertos/queue.h>
 #include <freertos/task.h>
 #include <SD.h>
-#include <StreamString.h>
-#include <WebServer.h>
+#include <WiFi.h>
 #include <Wire.h>
 
 // 3rdparty components
 #include <Adafruit_SSD1306.h>
-#include <ElegantOTA.h>
 #include <RTClib.h>
 
 
@@ -74,8 +75,6 @@ struct DeviceOperationMessage {
 
 
 // Globals
-WebServer server(80);
-
 RTC_DS3231 rtc;
 
 Adafruit_SSD1306 display(DISPLAY_WIDTH, DISPLAY_HEIGHT, &Wire, DISPLAY_RESET_PIN);
@@ -105,15 +104,12 @@ extern TaskHandle_t loopTaskHandle;
 
 
 // Forward declarations
-void handleServer(void*);
 bool handleButton(ButtonEvent event);
 void handleJoystick();
 void readSensor();
 void enablePump(bool enable);
 DateTime readNextPumpTime();
 void writeNextPumpTime(const DateTime& nextPumpTime);
-void onHttpRoot();
-void onHttpEventLog();
 void clearDisplayLines(int firstLine, int num=1);
 void opMessageTask(void*);
 void onPumpStopTimer(TimerHandle_t);
@@ -192,12 +188,7 @@ void setup()
   }
 
   initWifi();
-
-  server.on("/", onHttpRoot);
-  server.on("/eventlog", onHttpEventLog);
-
-  ElegantOTA.begin(&server);
-  server.begin();
+  initWebServer();
 
   pumpStopTimer = xTimerCreate(
       "pumpStop", pdMS_TO_TICKS(PUMP_DURATION),
@@ -251,38 +242,6 @@ void loop()
   vTaskDelayUntil(&loopLastWakeTime, pdMS_TO_TICKS(10));
 }
 
-
-void handleServer(void* args)
-{
-  while (true) {
-    server.handleClient();
-    ElegantOTA.loop();
-  }
-}
-
-
-void onHttpRoot()
-{
-  StreamString response;
-  response << R"(<html>
-<head>
-  <title>PlantWaterOS</title>
-</head>
-<body>
-  <h1>PlantWaterOS</h1>
-  <div>Next pump time: )" << nextPumpTime
-  << R"(</div>
-</body>
-</html>
-)";
-
-  server.send(200, "text/html", response);
-}
-
-void onHttpEventLog()
-{
-  server.send(200, "text/plain", eventLog);
-}
 
 bool handleButton(ButtonEvent event)
 {
