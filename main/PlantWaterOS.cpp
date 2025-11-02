@@ -1,7 +1,6 @@
 // Local includes
-#include "PlantWaterOS.hpp"
-
 #include "Button.hpp"
+#include "Formatting.hpp"
 #include "LogFile.hpp"
 #include "Wifi.hpp"
 

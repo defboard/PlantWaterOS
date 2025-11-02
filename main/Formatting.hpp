@@ -17,7 +17,7 @@ struct DatePart { DateTime dt; };
 struct TimePart { DateTime dt; };
 
 
-void endl(Print& out) {
+inline void endl(Print& out) {
   out.println();
   out.flush();
 }
@@ -29,14 +29,14 @@ inline Print& operator<< (Print& out, T value)
   return out;
 }
 
-Print& operator<< (Print& out, DoubleDigits num)
+inline Print& operator<< (Print& out, DoubleDigits num)
 {
   return out
       << (num.number / 10)
       << (num.number % 10);
 }
 
-Print& operator<< (Print& out, DatePart date)
+inline Print& operator<< (Print& out, DatePart date)
 {
   return out
     << DoubleDigits{date.dt.year() / 100}
@@ -45,7 +45,7 @@ Print& operator<< (Print& out, DatePart date)
     << F("-") << date.dt.day();
 }
 
-Print& operator<< (Print& out, TimePart time)
+inline Print& operator<< (Print& out, TimePart time)
 {
   return out
     << DoubleDigits{time.dt.hour()} << F(":")
@@ -53,14 +53,14 @@ Print& operator<< (Print& out, TimePart time)
     << DoubleDigits{time.dt.second()};
 }
 
-Print& operator<< (Print& out, DateTime datetime)
+inline Print& operator<< (Print& out, DateTime datetime)
 {
   return out
       << DatePart{datetime} << F(" ")
       << TimePart{datetime};
 }
 
-Print& operator<< (Print& out, TimeSpan timespan)
+inline Print& operator<< (Print& out, TimeSpan timespan)
 {
   int days = timespan.days();
   int hours = timespan.hours();
@@ -76,14 +76,14 @@ Print& operator<< (Print& out, TimeSpan timespan)
   return out << minutes << F("m");
 }
 
-Print& operator<< (Print& out, Temperature temperature)
+inline Print& operator<< (Print& out, Temperature temperature)
 {
   return out
       << (int)(temperature.degreeCelsius)           << F(".")
       << (int)(temperature.degreeCelsius * 10) % 10 << F("C");
 }
 
-Print& operator<< (Print& out, StreamFormatter f)
+inline Print& operator<< (Print& out, StreamFormatter f)
 {
   f(out);
   return out;
