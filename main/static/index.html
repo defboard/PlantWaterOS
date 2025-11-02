@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>SensorBoard</title>
+    <style>
+
+body {
+  display: grid;
+  place-items: center;
+}
+main {
+}
+h1 {
+  text-align: center;
+}
+
+.statusinfo {
+  display: grid;
+  grid: "name value";
+}
+.statusinfo > div {
+  padding: 0.5ex 1em;
+}
+.statusinfo > div:nth-child(4n+3),
+.statusinfo > div:nth-child(4n+4) {
+  background-color: #eee;
+}
+
+.actions {
+  display: flex;
+  justify-content: center;
+}
+.actions > button {
+  flex-grow: 1;
+  flex-basis: 100%;
+  margin: 0.5ex 0.1em;
+}
+
+    </style>
+  </head>
+  <body>
+    <main id="app"></main>
+
+    <script type="module">
+
+import { h, text, app } from "./hyperapp.js"
+
+
+// Effects
+
+const fetchJson = (dispatch, [url, action]) => {
+  fetch(url)
+  .then(response => response.json())
+  .then(data => dispatch(action, data))
+};
+
+const timeout = (dispatch, [delay, action]) => {
+  setTimeout(() => dispatch(action), delay);
+};
+
+
+// Events
+
+const DISABLE_TIMEOUT = 750;
+
+const GotServerStatus = (state, serverstatus) => [
+  {...state, serverstatus: {...state.serverstatus, ...serverstatus}},
+  [timeout, [DISABLE_TIMEOUT, EnableInputs]],
+];
+
+
+// Actions
+
+const EnableInputs = (state) => ({...state, disableInputs: false});
+const DisableInputs = (state) => ({...state, disableInputs: true});
+
+const ActivatePump = (state, event) => ([
+  DisableInputs(state),
+  [fetchJson, ["api/pump/activate", GotServerStatus]],
+]);
+
+const ResetPumpTime = (state, event) => ([
+  DisableInputs(state),
+  [fetchJson, ["api/pump/reset", GotServerStatus]],
+]);
+
+app({
+  init: [
+    {
+      disableInputs: true,
+      serverstatus: {
+        serverTime: "",
+        bootTime: "",
+        localIP: "",
+        prevPumpTime: "",
+        nextPumpTime: "",
+        pumpInterval: "",
+        numPumpEvents: "",
+        sensorValue: "",
+        temperature: "",
+      },
+    },
+    [fetchJson, ["api/status", GotServerStatus]],
+  ],
+
+  view: ({serverstatus, disableInputs}) => h("main", {}, [
+    h("h1", {}, text("PlantWaterOS")),
+    h("div", {class: "statusinfo"}, [
+      h("div", {}, text("Server time:")),
+      h("div", {}, text(serverstatus.serverTime)),
+      h("div", {}, text("Server boot time:")),
+      h("div", {}, text(serverstatus.bootTime)),
+      h("div", {}, text("IP:")),
+      h("div", {}, text(serverstatus.localIP)),
+
+      h("div", {}, text("Last pump time:")),
+      h("div", {}, text(serverstatus.prevPumpTime)),
+      h("div", {}, text("Next pump time:")),
+      h("div", {}, text(serverstatus.nextPumpTime)),
+      h("div", {}, text("Pump interval:")),
+      h("div", {}, text(serverstatus.pumpInterval + " days")),
+      h("div", {}, text("Total pump events:")),
+      h("div", {}, text(serverstatus.numPumpEvents)),
+
+      h("div", {}, text("Soil moisture:")),
+      h("div", {}, text(serverstatus.sensorValue)),
+      h("div", {}, text("Temperature:")),
+      h("div", {}, text(parseFloat(serverstatus.temperature).toFixed(1) + "°C")),
+    ]),
+    h("div", {class: "actions"}, [
+      h("button", {onclick: ActivatePump, disabled: disableInputs}, text("Pump now!")),
+      h("button", {onclick: ResetPumpTime, disabled: disableInputs}, text("Reset pump timer!")),
+    ]),
+  ]),
+
+  node: document.getElementById("app"),
+})
+
+    </script>
+  </body>
+</html>

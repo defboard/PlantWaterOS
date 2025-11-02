@@ -58,16 +58,6 @@ const int DISPLAY_RESET_PIN = -1;   // Reset pin # (or -1 if sharing Arduino res
 const int DISPLAY_ADDRESS   = 0x3C; // I2C address
 
 
-enum class MessageType {
-  ScreenRefresh,
-  ScreenCycleNext,
-  ScreenCyclePrev,
-  ScreenInfoLine,
-  PumpStart,
-  PumpStop,
-  PumpTimerReset,
-  SensorRead,
-};
 struct DeviceOperationMessage {
   MessageType type;
   const void* data;
@@ -85,6 +75,7 @@ LogFile logfile("/sensor.log", Serial);
 DateTime now;
 DateTime bootTime;
 DateTime nextLogTime;
+DateTime prevPumpTime;
 DateTime nextPumpTime;
 
 int numPumpEvents = 0;
@@ -113,10 +104,6 @@ void writeNextPumpTime(const DateTime& nextPumpTime);
 void clearDisplayLines(int firstLine, int num=1);
 void opMessageTask(void*);
 void onPumpStopTimer(TimerHandle_t);
-bool sendMessage(
-    MessageType type,
-    const void* data=nullptr,
-    TickType_t waitTime=portMAX_DELAY);
 
 
 // Implementation
@@ -499,6 +486,7 @@ void dispatchMessage(DeviceOperationMessage message)
       }
 
       now = rtc.now();
+      prevPumpTime = now;
       nextPumpTime = now + pumpInterval;
       writeNextPumpTime(nextPumpTime);
 

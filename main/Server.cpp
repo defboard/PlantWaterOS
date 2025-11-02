@@ -1,6 +1,7 @@
 #include "Server.hpp"
 
 #include "Formatting.hpp"
+#include "Json.hpp"
 #include "PlantWaterOS.hpp"
 
 #include <WebServer.h>
@@ -11,10 +12,20 @@
 // Globals
 WebServer server(80);
 
+extern const uint8_t static_index_html_start[]  asm("_binary_index_html_start");
+extern const uint8_t static_index_html_end[]    asm("_binary_index_html_end");
+
+extern const uint8_t static_hyperapp_js_start[] asm("_binary_hyperapp_js_start");
+extern const uint8_t static_hyperapp_js_end[]   asm("_binary_hyperapp_js_end");
+
 
 // Forward declarations
 void onHttpRoot();
+void onHttpHyperappJs();
 void onHttpEventLog();
+void onHttpApiStatus();
+void onHttpApiPumpActivate();
+void onHttpApiPumpReset();
 
 
 // Implementation
@@ -22,7 +33,11 @@ void onHttpEventLog();
 void initWebServer()
 {
   server.on("/", onHttpRoot);
+  server.on("/hyperapp.js", onHttpHyperappJs);
   server.on("/eventlog", onHttpEventLog);
+  server.on("/api/status", onHttpApiStatus);
+  server.on("/api/pump/activate", onHttpApiPumpActivate);
+  server.on("/api/pump/reset", onHttpApiPumpReset);
 
   ElegantOTA.begin(&server);
   server.begin();
@@ -38,23 +53,46 @@ void handleServer(void* args)
 
 void onHttpRoot()
 {
-  StreamString response;
-  response << R"(<html>
-<head>
-  <title>PlantWaterOS</title>
-</head>
-<body>
-  <h1>PlantWaterOS</h1>
-  <div>Next pump time: )" << nextPumpTime
-  << R"(</div>
-</body>
-</html>
-)";
+  server.send(200, "text/html", (const char*) static_index_html_start);
+}
 
-  server.send(200, "text/html", response);
+void onHttpHyperappJs()
+{
+  server.send(200, "text/javascript", (const char*) static_hyperapp_js_start);
 }
 
 void onHttpEventLog()
 {
   server.send(200, "text/plain", eventLog);
+}
+
+void onHttpApiStatus()
+{
+  StreamString response;
+  response << '{';
+  json_str(response, "serverTime", now);
+  json_str(response, "bootTime", bootTime);
+  json_str(response, "localIP", WiFi.localIP());
+  json_str(response, "prevPumpTime", prevPumpTime);
+  json_str(response, "nextPumpTime", nextPumpTime);
+  json_str(response, "pumpInterval", pumpInterval);
+  json_plain(response, "numPumpEvents", numPumpEvents);
+  json_plain(response, "sensorValue", sensorValue);
+  json_str(response, "temperature", temperature, true);
+  response << '}';
+  server.send(200, "application/json", response);
+}
+
+void onHttpApiPumpActivate()
+{
+  sendMessage(MessageType::PumpStart);
+  delay(100);
+  onHttpApiStatus();
+}
+
+void onHttpApiPumpReset()
+{
+  sendMessage(MessageType::PumpTimerReset);
+  delay(100);
+  onHttpApiStatus();
 }
