@@ -7,6 +7,7 @@
 #include <WebServer.h>
 #include <Stream.h>
 #include <ElegantOTA.h>
+#include <SD.h>
 
 
 // Globals
@@ -22,7 +23,8 @@ extern const uint8_t static_hyperapp_js_end[]   asm("_binary_hyperapp_js_gz_end"
 // Forward declarations
 void onHttpRoot();
 void onHttpHyperappJs();
-void onHttpEventLog();
+void onHttpFileEventsLog();
+void onHttpFileSensorLog();
 void onHttpApiStatus();
 void onHttpApiPumpActivate();
 void onHttpApiPumpReset();
@@ -35,7 +37,8 @@ void initWebServer()
 {
   server.on("/", onHttpRoot);
   server.on("/hyperapp.js", onHttpHyperappJs);
-  server.on("/eventlog", onHttpEventLog);
+  server.on("/file/events.log", onHttpFileEventsLog);
+  server.on("/file/sensor.log", onHttpFileSensorLog);
   server.on("/api/status", onHttpApiStatus);
   server.on("/api/pump/activate", onHttpApiPumpActivate);
   server.on("/api/pump/reset", onHttpApiPumpReset);
@@ -72,9 +75,22 @@ void onHttpHyperappJs()
   sendFile(200, "text/javascript", static_hyperapp_js_start, static_hyperapp_js_end);
 }
 
-void onHttpEventLog()
+void onHttpFileEventsLog()
 {
   server.send(200, "text/plain", eventLog);
+}
+
+void onHttpFileSensorLog()
+{
+  // The File will be able to read all the content that was there at the
+  // time of opening, but not more. It might be nice to guard the SD.open()
+  // call with a mutex against multi-line write operations to ensure that
+  // only fully written lines can be seen.
+  File logfile = SD.open("/sensor.log", FILE_READ, /* create */ false);
+
+  // No mutex guards needed to protect read access to the log file because the
+  // SD API is thread-safe as long as CONFIG_DISABLE_HAL_LOCKS is not set.
+  server.streamFile(logfile, "text/plain", 200);
 }
 
 void onHttpApiStatus()

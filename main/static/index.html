@@ -127,6 +127,16 @@ app({
       h("div", {}, text(serverstatus.sensorValue)),
       h("div", {}, text("Temperature:")),
       h("div", {}, text(parseFloat(serverstatus.temperature).toFixed(1) + "°C")),
+
+      h("div", {}, text("System events:")),
+      h("div", {}, [
+        h("a", {href: "file/events.log", target: "_blank"}, text("events.log")),
+      ]),
+
+      h("div", {}, text("Logfile:")),
+      h("div", {}, [
+        h("a", {href: "file/sensor.log", target: "_blank"}, text("sensor.log")),
+      ]),
     ]),
     h("div", {class: "actions"}, [
       h("button", {onclick: ActivatePump, disabled: disableInputs}, text("Pump now!")),
