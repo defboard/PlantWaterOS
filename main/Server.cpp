@@ -5,10 +5,11 @@
 #include "PlantWaterOS.hpp"
 
 #include <WebServer.h>
+#include <uri/UriBraces.h>
 #include <Stream.h>
 #include <ElegantOTA.h>
 #include <SD.h>
-
+#include <Preferences.h>
 
 // Globals
 WebServer server(80);
@@ -28,6 +29,7 @@ void onHttpFileSensorLog();
 void onHttpApiStatus();
 void onHttpApiPumpActivate();
 void onHttpApiPumpReset();
+void onHttpApiPrefsPumpDuration();
 void sendFile(int code, const char* content_type, const uint8_t* start, const uint8_t* end);
 
 
@@ -42,6 +44,8 @@ void initWebServer()
   server.on("/api/status", onHttpApiStatus);
   server.on("/api/pump/activate", onHttpApiPumpActivate);
   server.on("/api/pump/reset", onHttpApiPumpReset);
+
+  server.on(UriBraces("/prefs/pump/duration/{}"), onHttpApiPrefsPumpDuration);
 
   ElegantOTA.begin(&server);
   server.begin();
@@ -103,6 +107,7 @@ void onHttpApiStatus()
   json_str(response, "prevPumpTime", prevPumpTime);
   json_str(response, "nextPumpTime", nextPumpTime);
   json_str(response, "pumpInterval", pumpInterval);
+  json_plain(response, "pumpDuration", pumpDuration);
   json_plain(response, "numPumpEvents", numPumpEvents);
   json_plain(response, "sensorValue", sensorValue);
   json_str(response, "temperature", temperature, true);
@@ -121,5 +126,12 @@ void onHttpApiPumpReset()
 {
   sendMessage(MessageType::PumpTimerReset);
   delay(100);
+  onHttpApiStatus();
+}
+
+void onHttpApiPrefsPumpDuration()
+{
+  pumpDuration = server.pathArg(0).toInt();
+  setPumpDuration(pumpDuration);
   onHttpApiStatus();
 }

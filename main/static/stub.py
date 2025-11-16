@@ -10,6 +10,7 @@ app = Flask(__name__)
 state = SimpleNamespace()
 state.bootTime = datetime.now()
 state.pumpInterval = timedelta(3)
+state.pumpDuration = 2000
 state.prevPumpTime = datetime(2000, 1, 1, 0, 0, 0)
 state.nextPumpTime = state.prevPumpTime + state.pumpInterval
 state.numPumpEvents = 0
@@ -64,6 +65,7 @@ def server_info():
         "prevPumpTime": format_time(state.prevPumpTime),
         "nextPumpTime": format_time(state.nextPumpTime),
         "pumpInterval": state.pumpInterval.days,
+        "pumpDuration": state.pumpDuration,
         "numPumpEvents": state.numPumpEvents,
         "sensorValue": random.randint(800, 1200),
         "temperature": random.uniform(19, 21),
@@ -88,6 +90,13 @@ def api_pump_activate():
 def api_pump_reset():
     state.nextPumpTime = datetime.now() + state.pumpInterval
     log("reset pump timer")
+    return server_info()
+
+
+@app.route("/prefs/pump/duration/<int:duration>")
+def prefs_pump_duration(duration):
+    state.pumpDuration = duration
+    log("setting pump duration =", duration)
     return server_info()
 
 

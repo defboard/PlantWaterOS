@@ -14,6 +14,7 @@
 #include <SD.h>
 #include <WiFi.h>
 #include <Wire.h>
+#include <Preferences.h>
 
 // 3rdparty components
 #include <Adafruit_SSD1306.h>
@@ -41,11 +42,11 @@ const int BTN_RCV_PIN       = 23;
 
 // Configuration
 const int SERIAL_BAUD_RATE = 9600;
-const int PUMP_DURATION = 2000;     // [ms]
 
 const TimeSpan firstPumpDelay (1/*days*/, 0/*hours*/, 0/*minutes*/, 0/*seconds*/);
 const TimeSpan pumpInterval   (3/*days*/, 0/*hours*/, 0/*minutes*/, 0/*seconds*/);
 const TimeSpan logInterval    (0/*days*/, 0/*hours*/, 20/*minutes*/, 0/*seconds*/);
+int pumpDuration = 2000;
 
 const int numSensorRepeat = 20;
 const int delaySensorRepeat = 1000;   // [ms]
@@ -177,8 +178,17 @@ void setup()
   initWifi();
   initWebServer();
 
+  {
+    Preferences prefs;
+    bool open = prefs.begin(PREFS_NAMESPACE, /* readOnly */ true);
+    eventLog << "Open prefs: " << CheckSuccess(open) << endl;
+    if (open) {
+      pumpDuration = prefs.getInt("pump-duration", pumpDuration);
+    }
+  }
+
   pumpStopTimer = xTimerCreate(
-      "pumpStop", pdMS_TO_TICKS(PUMP_DURATION),
+      "pumpStop", pdMS_TO_TICKS(pumpDuration),
       /* xAutoReload */ pdFALSE,
       /* pvTimerID */ (void*) loopTaskHandle,
       onPumpStopTimer);
@@ -492,7 +502,7 @@ void dispatchMessage(DeviceOperationMessage message)
 
       numPumpEvents += 1;
       logfile.open();
-      eventLog << now << F(": Pump event ") << numPumpEvents << F(" (") << PUMP_DURATION << F("ms)") << endl;
+      eventLog << now << F(": Pump event ") << numPumpEvents << F(" (") << pumpDuration << F("ms)") << endl;
 
       clearDisplayLines(4);
       display << "PUMPING...";
@@ -536,6 +546,32 @@ void clearDisplayLines(int line, int num)
 {
   display.fillRect(0, (line - 1) * LINE_HEIGHT, DISPLAY_WIDTH, LINE_HEIGHT * num, SSD1306_BLACK);
   display.setCursor(1, (line - 1) * LINE_HEIGHT);
+}
+
+
+int getPumpDuration()
+{
+  return pumpDuration;
+}
+
+bool setPumpDuration(int duration)
+{
+  pumpDuration = duration;
+
+  xTimerChangePeriod(
+      pumpStopTimer,
+      pdMS_TO_TICKS(duration),
+      /* blockTime */ 0);
+
+  {
+    Preferences prefs;
+    if (not prefs.begin(PREFS_NAMESPACE, /* readOnly */ false)) {
+      return false;
+    }
+    if (not prefs.putInt("pump-duration", duration)) {
+      return false;
+    }
+  }
 }
 
 // vim: sw=2 ts=2 sts=2

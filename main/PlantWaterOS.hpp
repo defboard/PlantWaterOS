@@ -3,6 +3,9 @@
 #include <RTClib.h>
 
 
+const char* const PREFS_NAMESPACE = "PlantWaterOS";     // size <= 16!
+
+
 struct Temperature {
   int degreeCelsius;
 };
@@ -41,3 +44,7 @@ bool sendMessage(
     MessageType type,
     const void* data=nullptr,
     TickType_t waitTime=portMAX_DELAY);
+
+
+extern int getPumpDuration();
+extern bool setPumpDuration(int duration);
