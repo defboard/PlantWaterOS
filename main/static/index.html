@@ -51,15 +51,17 @@ nav > div.active:hover {
 main {
 }
 
-.tabular {
+dl {
   display: grid;
   grid: "name value";
+  margin: 0;
 }
-.tabular > div {
+dl > * {
   padding: 0.5ex 1em;
+  margin: 0;
 }
-.tabular > div:nth-child(4n+3),
-.tabular > div:nth-child(4n+4) {
+dl > *:nth-child(4n+3),
+dl > *:nth-child(4n+4) {
   background-color: #eee;
 }
 
@@ -180,76 +182,79 @@ app({
       h("div", {onclick: ShowTabPrefs, class: {active: activeTab == "prefs"}}, text("Preferences")),
     ]),
 
-    activeTab == "status" &&
-    h("main", {class: ["tabular", "statusinfo"]}, [
-      h("div", {}, text("Server time:")),
-      h("div", {}, text(serverstatus.serverTime)),
-      h("div", {}, text("Server boot time:")),
-      h("div", {}, text(serverstatus.bootTime)),
-      h("div", {}, text("IP:")),
-      h("div", {}, text(serverstatus.localIP)),
+    activeTab == "status" && h('main', {}, [
+      h("dl", {}, [
+        h("dt", {}, text("Server time:")),
+        h("dd", {}, text(serverstatus.serverTime)),
+        h("dt", {}, text("Server boot time:")),
+        h("dd", {}, text(serverstatus.bootTime)),
+        h("dt", {}, text("IP:")),
+        h("dd", {}, text(serverstatus.localIP)),
 
-      h("div", {}, text("Last pump time:")),
-      h("div", {}, text(serverstatus.prevPumpTime)),
-      h("div", {}, text("Next pump time:")),
-      h("div", {}, text(serverstatus.nextPumpTime)),
+        h("dt", {}, text("Last pump time:")),
+        h("dd", {}, text(serverstatus.prevPumpTime)),
+        h("dt", {}, text("Next pump time:")),
+        h("dd", {}, text(serverstatus.nextPumpTime)),
 
-      h("div", {}, text("Total pump events:")),
-      h("div", {}, text(serverstatus.numPumpEvents)),
+        h("dt", {}, text("Total pump events:")),
+        h("dd", {}, text(serverstatus.numPumpEvents)),
 
-      h("div", {}, text("Soil moisture:")),
-      h("div", {}, text(serverstatus.sensorValue)),
-      h("div", {}, text("Temperature:")),
-      h("div", {}, text(parseFloat(serverstatus.temperature).toFixed(1) + "°C")),
+        h("dt", {}, text("Soil moisture:")),
+        h("dd", {}, text(serverstatus.sensorValue)),
+        h("dt", {}, text("Temperature:")),
+        h("dd", {}, text(parseFloat(serverstatus.temperature).toFixed(1) + "°C")),
 
-      h("div", {}, text("System events:")),
-      h("div", {}, [
-        h("a", {href: "file/events.log", target: "_blank"}, text("events.log")),
+        h("dt", {}, text("System events:")),
+        h("dd", {}, [
+          h("a", {href: "file/events.log", target: "_blank"}, text("events.log")),
+        ]),
+
+        h("dt", {}, text("Logfile:")),
+        h("dd", {}, [
+          h("a", {href: "file/sensor.log", target: "_blank"}, text("sensor.log")),
+        ]),
+      ]), // </dl>
+
+      h("div", {class: "actions"}, [
+        h("button", {onclick: ActivatePump, disabled: disableInputs}, text("Pump now!")),
+        h("button", {onclick: ResetPumpTime, disabled: disableInputs}, text("Reset pump timer!")),
+        h("button", {onclick: RebootServer, disabled: disableInputs}, text("Reboot!")),
       ]),
+    ]), // </main>
 
-      h("div", {}, text("Logfile:")),
-      h("div", {}, [
-        h("a", {href: "file/sensor.log", target: "_blank"}, text("sensor.log")),
-      ]),
-    ]),
-    activeTab == "status" &&
-    h("div", {class: "actions"}, [
-      h("button", {onclick: ActivatePump, disabled: disableInputs}, text("Pump now!")),
-      h("button", {onclick: ResetPumpTime, disabled: disableInputs}, text("Reset pump timer!")),
-      h("button", {onclick: RebootServer, disabled: disableInputs}, text("Reboot!")),
-    ]),
+    activeTab == "prefs" && h('main', {}, [
+      h("dl", {}, [
+        h("dt", {}, text("Pump interval:")),
+        h("dd", {}, [
+          h("input", {
+            type: "number",
+            value: editstatus.pumpInterval ?? serverstatus.pumpInterval,
+            min: "1",
+            max: "99",
+            oninput: EditNumber('pumpInterval'),
+          }),
+          h("span", {}, text(" days")),
+        ]),
 
-    activeTab == "prefs" &&
-    h("main", {class: ["tabular", "preferences"]}, [
-      h("div", {}, text("Pump interval:")),
-      h("div", {}, [
-        h("input", {
-          type: "number",
-          value: editstatus.pumpInterval ?? serverstatus.pumpInterval,
-          min: "1",
-          max: "99",
-          oninput: EditNumber('pumpInterval'),
-        }),
-        h("span", {}, text(" days")),
-      ]),
+        h("dt", {}, text("Pump duration:")),
+        h("dd", {}, [
+          h("input", {
+            type: "number",
+            value: editstatus.pumpDuration ?? serverstatus.pumpDuration,
+            min: "100",
+            max: "9999",
+            oninput: EditNumber('pumpDuration'),
+          }),
+          h("span", {}, text(" ms")),
+        ]),
+      ]), // </dl>
 
-      h("div", {}, text("Pump duration:")),
-      h("div", {}, [
-        h("input", {
-          type: "number",
-          value: editstatus.pumpDuration ?? serverstatus.pumpDuration,
-          min: "100",
-          max: "9999",
-          oninput: EditNumber('pumpDuration'),
-        }),
-        h("span", {}, text(" ms")),
+      h("div", {class: "actions"}, [
+        h("button", {onclick: PrefsSave, disabled: disableInputs}, text("Save")),
+        h("button", {onclick: PrefsRestore, disabled: disableInputs}, text("Restore")),
       ]),
-    ]),
-    activeTab == "prefs" &&
-    h("div", {class: "actions"}, [
-      h("button", {onclick: PrefsSave, disabled: disableInputs}, text("Save")),
-      h("button", {onclick: PrefsRestore, disabled: disableInputs}, text("Restore")),
-    ]),
+    ]), // </main>
+
   ]),
 
   node: document.getElementById("app"),
