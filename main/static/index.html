@@ -103,7 +103,12 @@ const timeout = (dispatch, [delay, action]) => {
 const DISABLE_TIMEOUT = 750;
 
 const GotServerStatus = (state, serverstatus) => [
-  {...state, serverstatus: {...state.serverstatus, ...serverstatus}},
+  {...state, serverstatus: {...state.serverstatus, ...serverstatus},
+            preference:{
+                pumpDuration: state.serverstatus.pumpDuration,
+                pumpInterval: state.serverstatus.pumpInterval,
+            }
+  },
   [timeout, [DISABLE_TIMEOUT, EnableInputs]],
 ];
 
@@ -132,8 +137,14 @@ const RebootServer = (state, event) => ([
 ]);
 
 /* TODO */
-const PrefsSave = (state) => ({...state });
-const PrefsRestore = (state) => ({...state });
+const PrefsSave = (state) => ({...state,  }
+);
+
+const PrefsRestore = (state,) => ({...state, preference:{
+        pumpDuration: state.serverstatus.pumpDuration,
+        pumpInterval: state.serverstatus.pumpInterval,
+        }}
+);
 
 
 app({
@@ -153,11 +164,15 @@ app({
         sensorValue: "",
         temperature: "",
       },
+        preference: {
+        pumpDuration: "",
+        pumpInterval: "",
+      }
     },
     [fetchJson, ["api/status", GotServerStatus]],
   ],
 
-  view: ({serverstatus, activeTab, disableInputs}) => h("div", {}, [
+  view: ({serverstatus, activeTab, disableInputs, preference}) => h("div", {}, [
     h("h1", {}, text("PlantWaterOS")),
 
     h("nav", {}, [
@@ -210,7 +225,7 @@ app({
       h("div", {}, [
         h("input", {
           type: "number",
-          value: serverstatus.pumpInterval,
+          value: preference.pumpInterval,
           min: "1",
           max: "99",
         }),
@@ -221,7 +236,7 @@ app({
       h("div", {}, [
         h("input", {
           type: "number",
-          value: serverstatus.pumpDuration,
+          value: preference.pumpDuration,
           min: "100",
           max: "9999",
         }),
