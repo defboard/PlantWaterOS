@@ -103,12 +103,7 @@ const timeout = (dispatch, [delay, action]) => {
 const DISABLE_TIMEOUT = 750;
 
 const GotServerStatus = (state, serverstatus) => [
-  {...state, serverstatus: {...state.serverstatus, ...serverstatus},
-            preference:{
-                pumpDuration: state.serverstatus.pumpDuration,
-                pumpInterval: state.serverstatus.pumpInterval,
-            }
-  },
+  {...state, serverstatus: {...state.serverstatus, ...serverstatus}},
   [timeout, [DISABLE_TIMEOUT, EnableInputs]],
 ];
 
@@ -137,14 +132,22 @@ const RebootServer = (state, event) => ([
 ]);
 
 /* TODO */
-const PrefsSave = (state) => ({...state,  }
+const isDefaultValue = (state, key, value) => (state.serverstatus[key] == value);
+const hasDefaultValue = (state, key) => (
+  state.editstatus[key] == undefined || isDefaultValue(state, key, state.editstatus[key])
 );
 
-const PrefsRestore = (state,) => ({...state, preference:{
-        pumpDuration: state.serverstatus.pumpDuration,
-        pumpInterval: state.serverstatus.pumpInterval,
-        }}
-);
+const PrefsSave = (state) => ({...state});
+
+const PrefsRestore = (state,) => ({...state, editstatus: {}});
+
+const EditNumber = (key) => (state, event) =>  ({
+  ...state,
+  editstatus: {
+    ...state.editstatus,
+    [key]: event.target.value,
+  },
+});
 
 
 app({
@@ -164,15 +167,12 @@ app({
         sensorValue: "",
         temperature: "",
       },
-        preference: {
-        pumpDuration: "",
-        pumpInterval: "",
-      }
+      editstatus: {}
     },
     [fetchJson, ["api/status", GotServerStatus]],
   ],
 
-  view: ({serverstatus, activeTab, disableInputs, preference}) => h("div", {}, [
+  view: ({serverstatus, activeTab, disableInputs, editstatus}) => h("div", {}, [
     h("h1", {}, text("PlantWaterOS")),
 
     h("nav", {}, [
@@ -225,9 +225,10 @@ app({
       h("div", {}, [
         h("input", {
           type: "number",
-          value: preference.pumpInterval,
+          value: editstatus.pumpInterval ?? serverstatus.pumpInterval,
           min: "1",
           max: "99",
+          oninput: EditNumber('pumpInterval'),
         }),
         h("span", {}, text(" days")),
       ]),
@@ -236,9 +237,10 @@ app({
       h("div", {}, [
         h("input", {
           type: "number",
-          value: preference.pumpDuration,
+          value: editstatus.pumpDuration ?? serverstatus.pumpDuration,
           min: "100",
           max: "9999",
+          oninput: EditNumber('pumpDuration'),
         }),
         h("span", {}, text(" ms")),
       ]),
