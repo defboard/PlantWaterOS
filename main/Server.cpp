@@ -5,7 +5,6 @@
 #include "PlantWaterOS.hpp"
 
 #include <WebServer.h>
-#include <uri/UriBraces.h>
 #include <Stream.h>
 #include <ElegantOTA.h>
 #include <SD.h>
@@ -30,7 +29,6 @@ void onHttpApiStatus();
 void onHttpApiPumpActivate();
 void onHttpApiPumpReset();
 void onHttpApiPrefsPost();
-void onHttpApiPrefsPumpDuration();
 void sendFile(int code, const char* content_type, const uint8_t* start, const uint8_t* end);
 
 
@@ -46,8 +44,6 @@ void initWebServer()
   server.on("/api/pump/activate", onHttpApiPumpActivate);
   server.on("/api/pump/reset", onHttpApiPumpReset);
   server.on("/prefs", HTTPMethod::HTTP_POST, onHttpApiPrefsPost);
-
-  server.on(UriBraces("/prefs/pump/duration/{}"), onHttpApiPrefsPumpDuration);
 
   ElegantOTA.begin(&server);
   server.begin();
@@ -128,13 +124,6 @@ void onHttpApiPumpReset()
 {
   sendMessage(MessageType::PumpTimerReset);
   delay(100);
-  onHttpApiStatus();
-}
-
-void onHttpApiPrefsPumpDuration()
-{
-  int pumpDuration = server.pathArg(0).toInt();
-  setPumpDuration(pumpDuration);
   onHttpApiStatus();
 }
 

@@ -95,13 +95,6 @@ def api_pump_reset():
     return server_info()
 
 
-@app.route("/prefs/pump/duration/<int:duration>")
-def prefs_pump_duration(duration):
-    state.pumpDuration = duration
-    log("setting pump duration =", duration)
-    return server_info()
-
-
 @app.route("/prefs", methods=['POST'])
 def prefs():
     data = request.form
