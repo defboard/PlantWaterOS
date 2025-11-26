@@ -572,6 +572,7 @@ bool setPumpDuration(int duration)
       return false;
     }
   }
+	return true;
 }
 
 // vim: sw=2 ts=2 sts=2

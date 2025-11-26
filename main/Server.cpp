@@ -107,7 +107,7 @@ void onHttpApiStatus()
   json_str(response, "prevPumpTime", prevPumpTime);
   json_str(response, "nextPumpTime", nextPumpTime);
   json_str(response, "pumpInterval", pumpInterval);
-  json_plain(response, "pumpDuration", pumpDuration);
+  json_plain(response, "pumpDuration", getPumpDuration());
   json_plain(response, "numPumpEvents", numPumpEvents);
   json_plain(response, "sensorValue", sensorValue);
   json_str(response, "temperature", temperature, true);
@@ -131,7 +131,7 @@ void onHttpApiPumpReset()
 
 void onHttpApiPrefsPumpDuration()
 {
-  pumpDuration = server.pathArg(0).toInt();
+  int pumpDuration = server.pathArg(0).toInt();
   setPumpDuration(pumpDuration);
   onHttpApiStatus();
 }
