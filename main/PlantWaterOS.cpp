@@ -44,8 +44,8 @@ const int BTN_RCV_PIN       = 23;
 const int SERIAL_BAUD_RATE = 9600;
 
 const TimeSpan firstPumpDelay (1/*days*/, 0/*hours*/, 0/*minutes*/, 0/*seconds*/);
-const TimeSpan pumpInterval   (3/*days*/, 0/*hours*/, 0/*minutes*/, 0/*seconds*/);
 const TimeSpan logInterval    (0/*days*/, 0/*hours*/, 20/*minutes*/, 0/*seconds*/);
+TimeSpan pumpInterval         (3/*days*/, 0/*hours*/, 0/*minutes*/, 0/*seconds*/);
 int pumpDuration = 2000;
 
 const int numSensorRepeat = 20;
@@ -184,6 +184,7 @@ void setup()
     eventLog << "Open prefs: " << CheckSuccess(open) << endl;
     if (open) {
       pumpDuration = prefs.getInt("pump-duration", pumpDuration);
+      pumpInterval = TimeSpan(prefs.getLong("pump-interval", pumpInterval.totalseconds()));
     }
   }
 
@@ -556,6 +557,10 @@ int getPumpDuration()
 
 bool setPumpDuration(int duration)
 {
+  if (duration < 100 or duration > 10 * 1000) {
+    return false;
+  }
+
   pumpDuration = duration;
 
   xTimerChangePeriod(
@@ -572,7 +577,33 @@ bool setPumpDuration(int duration)
       return false;
     }
   }
-	return true;
+  return true;
+}
+
+int32_t getPumpInterval()
+{
+  return pumpInterval.totalseconds();
+}
+
+bool setPumpInterval(int32_t seconds)
+{
+  if (seconds < 6 * 3600) {
+    return false;
+  }
+
+  pumpInterval = TimeSpan(seconds);
+
+  {
+    Preferences prefs;
+    if (not prefs.begin(PREFS_NAMESPACE, /* readOnly */ false)) {
+      return false;
+    }
+    if (not prefs.putLong("pump-interval", seconds)) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 // vim: sw=2 ts=2 sts=2

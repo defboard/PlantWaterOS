@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from types import SimpleNamespace
 from io import StringIO
 import random
+import json
 
 app = Flask(__name__)
 
@@ -25,6 +26,7 @@ def main():
 
 def log(*text):
     print("{}:".format(format_time(datetime.now())), *text, file=logfile)
+    print("{}:".format(format_time(datetime.now())), *text)
 
 
 def format_time(dt):
@@ -64,7 +66,7 @@ def server_info():
         "localIP": "{}:{}".format(*request.server),
         "prevPumpTime": format_time(state.prevPumpTime),
         "nextPumpTime": format_time(state.nextPumpTime),
-        "pumpInterval": state.pumpInterval.days,
+        "pumpInterval": state.pumpInterval.total_seconds(),
         "pumpDuration": state.pumpDuration,
         "numPumpEvents": state.numPumpEvents,
         "sensorValue": random.randint(800, 1200),
@@ -97,6 +99,22 @@ def api_pump_reset():
 def prefs_pump_duration(duration):
     state.pumpDuration = duration
     log("setting pump duration =", duration)
+    return server_info()
+
+
+@app.route("/prefs", methods=['POST'])
+def prefs():
+    data = request.form
+    log("updating prefs ", data)
+
+    pumpInterval = data.get("pumpInterval")
+    if pumpInterval is not None:
+        state.pumpInterval = timedelta(0, int(pumpInterval))
+
+    pumpDuration = data.get("pumpDuration")
+    if pumpDuration is not None:
+        state.pumpDuration = int(pumpDuration)
+
     return server_info()
 
 

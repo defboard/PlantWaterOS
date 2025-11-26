@@ -2,6 +2,7 @@ build
 log
 sdkconfig.old
 managed_components
+*.swp
 
 # Credentials:
 main/WifiCredentials.cpp

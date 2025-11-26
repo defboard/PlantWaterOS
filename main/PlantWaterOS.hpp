@@ -25,7 +25,6 @@ enum class MessageType {
 extern StreamString eventLog;
 
 extern const TimeSpan firstPumpDelay;
-extern const TimeSpan pumpInterval;
 extern const TimeSpan logInterval;
 
 extern DateTime now;
@@ -48,3 +47,6 @@ bool sendMessage(
 
 extern int getPumpDuration();
 extern bool setPumpDuration(int duration);
+
+extern int32_t getPumpInterval();
+extern bool setPumpInterval(int32_t interval);

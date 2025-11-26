@@ -29,6 +29,7 @@ void onHttpFileSensorLog();
 void onHttpApiStatus();
 void onHttpApiPumpActivate();
 void onHttpApiPumpReset();
+void onHttpApiPrefsPost();
 void onHttpApiPrefsPumpDuration();
 void sendFile(int code, const char* content_type, const uint8_t* start, const uint8_t* end);
 
@@ -44,6 +45,7 @@ void initWebServer()
   server.on("/api/status", onHttpApiStatus);
   server.on("/api/pump/activate", onHttpApiPumpActivate);
   server.on("/api/pump/reset", onHttpApiPumpReset);
+  server.on("/prefs", HTTPMethod::HTTP_POST, onHttpApiPrefsPost);
 
   server.on(UriBraces("/prefs/pump/duration/{}"), onHttpApiPrefsPumpDuration);
 
@@ -106,7 +108,7 @@ void onHttpApiStatus()
   json_str(response, "localIP", WiFi.localIP());
   json_str(response, "prevPumpTime", prevPumpTime);
   json_str(response, "nextPumpTime", nextPumpTime);
-  json_str(response, "pumpInterval", pumpInterval);
+  json_str(response, "pumpInterval", getPumpInterval());
   json_plain(response, "pumpDuration", getPumpDuration());
   json_plain(response, "numPumpEvents", numPumpEvents);
   json_plain(response, "sensorValue", sensorValue);
@@ -133,5 +135,20 @@ void onHttpApiPrefsPumpDuration()
 {
   int pumpDuration = server.pathArg(0).toInt();
   setPumpDuration(pumpDuration);
+  onHttpApiStatus();
+}
+
+void onHttpApiPrefsPost()
+{
+  if (server.hasArg("pumpDuration")) {
+    int pumpDuration = server.arg("pumpDuration").toInt();
+    setPumpDuration(pumpDuration);
+  }
+
+  if (server.hasArg("pumpInterval")) {
+    int32_t pumpInterval = server.arg("pumpInterval").toInt();
+    setPumpInterval(pumpInterval);
+  }
+
   onHttpApiStatus();
 }

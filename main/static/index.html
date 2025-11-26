@@ -104,6 +104,15 @@ const fetchJson = (dispatch, [url, action]) => {
   .then(data => dispatch(action, data))
 };
 
+const postRequest = (dispatch, [url, data, action]) => {
+  fetch(url, {
+    method: "POST",
+    body: new URLSearchParams(data),
+  })
+  .then(response => response.json())
+  .then(data => dispatch(action, data))
+};
+
 const timeout = (dispatch, [delay, action]) => {
   setTimeout(() => dispatch(action), delay);
 };
@@ -148,15 +157,18 @@ const hasDefaultValue = (state, key) => (
   state.editstatus[key] == undefined || isDefaultValue(state, key, state.editstatus[key])
 );
 
-const PrefsSave = (state) => ({...state});
+const PrefsSave = (state, event) => ([
+  DisableInputs(state),
+  [postRequest, ["prefs", state.editstatus, GotServerStatus]],
+]);
 
 const PrefsRestore = (state,) => ({...state, editstatus: {}});
 
-const EditNumber = (key) => (state, event) =>  ({
+const EditNumber = (key, multiplier) => (state, event) =>  ({
   ...state,
   editstatus: {
     ...state.editstatus,
-    [key]: event.target.value,
+    [key]: event.target.value * (multiplier ?? 1),
   },
 });
 
@@ -237,10 +249,10 @@ app({
         h("dd", {class: {modified: !hasDefaultValue({serverstatus, editstatus}, "pumpInterval")}}, [
           h("input", {
             type: "number",
-            value: editstatus.pumpInterval ?? serverstatus.pumpInterval,
+            value: (editstatus.pumpInterval ?? serverstatus.pumpInterval) / (24 * 3600),
             min: "1",
             max: "99",
-            oninput: EditNumber('pumpInterval'),
+            oninput: EditNumber('pumpInterval', 24 * 3600),
           }),
           h("span", {}, text(" days")),
         ]),
