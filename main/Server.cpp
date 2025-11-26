@@ -26,6 +26,7 @@ void onHttpHyperappJs();
 void onHttpFileEventsLog();
 void onHttpFileSensorLog();
 void onHttpApiStatus();
+void onHttpApiServerReboot();
 void onHttpApiPumpActivate();
 void onHttpApiPumpReset();
 void onHttpApiPrefsPost();
@@ -41,6 +42,7 @@ void initWebServer()
   server.on("/file/events.log", onHttpFileEventsLog);
   server.on("/file/sensor.log", onHttpFileSensorLog);
   server.on("/api/status", onHttpApiStatus);
+  server.on("/api/server/reboot", onHttpApiServerReboot);
   server.on("/api/pump/activate", onHttpApiPumpActivate);
   server.on("/api/pump/reset", onHttpApiPumpReset);
   server.on("/prefs", HTTPMethod::HTTP_POST, onHttpApiPrefsPost);
@@ -111,6 +113,13 @@ void onHttpApiStatus()
   json_str(response, "temperature", temperature, true);
   response << '}';
   server.send(200, "application/json", response);
+}
+
+void onHttpApiServerReboot()
+{
+  server.send(200, "application/json", "{}");
+  delay(100);
+  esp_restart();
 }
 
 void onHttpApiPumpActivate()

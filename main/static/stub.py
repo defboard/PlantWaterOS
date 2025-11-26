@@ -78,6 +78,12 @@ def api_status():
     return server_info()
 
 
+@app.route("/api/server/reboot")
+def api_server_reboot():
+    log("Reboot")
+    return {}
+
+
 @app.route("/api/pump/activate")
 def api_pump_activate():
     state.prevPumpTime = datetime.now()
