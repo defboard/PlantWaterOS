@@ -4,7 +4,6 @@ from datetime import datetime, timedelta
 from types import SimpleNamespace
 from io import StringIO
 import random
-import json
 
 app = Flask(__name__)
 
