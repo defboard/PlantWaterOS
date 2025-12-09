@@ -234,6 +234,11 @@ app({
         h("dd", {}, [
           h("a", {href: "file/sensor.log", target: "_blank"}, text("sensor.log")),
         ]),
+
+        h("dt", {}, text("Update firmware:")),
+        h("dd", {}, [
+          h("a", {href: "update", target: "_blank"}, text("update")),
+        ]),
       ]), // </dl>
 
       h("div", {class: "actions"}, [

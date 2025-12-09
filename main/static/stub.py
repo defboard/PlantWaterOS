@@ -38,6 +38,11 @@ def index():
     return send_from_directory('.', 'index.html')
 
 
+@app.route("/update")
+def update():
+    return "Update page"
+
+
 @app.route("/style.css")
 def style():
     return send_from_directory('.', 'style.css')
