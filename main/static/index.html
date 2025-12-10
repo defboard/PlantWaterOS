@@ -86,6 +86,18 @@ dt.modified::after {
   margin: 0.5ex 0.1em;
 }
 
+/* Plot */
+.dataPoint {
+  stroke: black;
+  stroke-width: 0.1;
+  fill: #bdb;
+}
+
+.axis {
+  stroke: black;
+  stroke-width: 1;
+}
+
     </style>
   </head>
   <body>
@@ -173,6 +185,43 @@ const EditNumber = (key, multiplier) => (state, event) =>  ({
 });
 
 
+const delta = (limits) => limits[1] - limits[0];
+const addMargin = (limits, margin) => [limits[0] - margin * delta(limits), limits[1] + margin * delta(limits)];
+
+const ShowGraph = ({sensorData}) => {
+    const x1 = 10;
+    const y1 = 90;
+    const x2 = 95;
+    const y2 = 5;
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+
+    const xdata = sensorData.map(elem => elem[0]);
+    const ydata = sensorData.map(elem => elem[1]);
+
+    const xlim = addMargin([Math.min(...xdata), Math.max(...xdata)], 0.1);
+    const ylim = addMargin([Math.min(...ydata), Math.max(...ydata)], 0.1);
+
+    const xdataMin = xlim[0];
+    const ydataMin = ylim[0];
+    const xdataDelta = xlim[1] - xlim[0];
+    const ydataDelta = ylim[1] - ylim[0];
+
+    return h("svg", { viewBox: "0 0 100 100" }, [
+        h("line", {  x1, y1, x2: x2, y2: y1, class: "axis" }, []),
+        h("line", {  x1, y1, x2: x1, y2: y2, class: "axis" }, []),
+        ...sensorData.map(([x, y]) => {
+          return h("circle", {
+            cx: x1 + dx * (x - xdataMin) / xdataDelta,
+            cy: y1 + dy * (y - ydataMin) / ydataDelta,
+            r: 0.5,
+            class: "dataPoint",
+          }, []);
+        }),
+    ]);
+};
+
+
 app({
   init: [
     {
@@ -189,6 +238,7 @@ app({
         numPumpEvents: "",
         sensorValue: "",
         temperature: "",
+        sensorData: [],
       },
       editstatus: {}
     },
@@ -246,6 +296,8 @@ app({
         h("button", {onclick: ResetPumpTime, disabled: disableInputs}, text("Reset pump timer!")),
         h("button", {onclick: RebootServer, disabled: disableInputs}, text("Reboot!")),
       ]),
+
+      ShowGraph(serverstatus),
     ]), // </main>
 
     activeTab == "prefs" && h('main', {}, [
@@ -279,6 +331,8 @@ app({
         h("button", {onclick: PrefsSave, disabled: disableInputs}, text("Save")),
         h("button", {onclick: PrefsRestore, disabled: disableInputs}, text("Restore")),
       ]),
+
+      ShowGraph(serverstatus),
     ]), // </main>
 
   ]),

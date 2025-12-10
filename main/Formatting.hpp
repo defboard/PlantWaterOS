@@ -81,6 +81,11 @@ inline Print& operator<< (Print& out, Temperature temperature)
       << (int)(temperature.degreeCelsius * 10) % 10 << F("C");
 }
 
+inline Print& operator<< (Print& out, SensorRecord record)
+{
+  return out << '[' << record.time << ',' << record.value << ']';
+}
+
 inline Print& operator<< (Print& out, StreamFormatter f)
 {
   f(out);

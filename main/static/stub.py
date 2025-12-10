@@ -14,6 +14,13 @@ state.pumpDuration = 2000
 state.prevPumpTime = datetime(2000, 1, 1, 0, 0, 0)
 state.nextPumpTime = state.prevPumpTime + state.pumpInterval
 state.numPumpEvents = 0
+state.sensorData = [
+    [120923, 1200],
+    [120925, 1101],
+    [120926, 1305],
+    [120930, 1800],
+    [120935, 900],
+]
 
 logfile = StringIO()
 
@@ -75,6 +82,7 @@ def server_info():
         "numPumpEvents": state.numPumpEvents,
         "sensorValue": random.randint(800, 1200),
         "temperature": random.uniform(19, 21),
+        "sensorData": state.sensorData,
     }
 
 
