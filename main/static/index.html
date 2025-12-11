@@ -9,23 +9,72 @@ body {
   display: grid;
   place-items: center;
 }
-main {
+
+/* javascript handled */
+
+#app {
 }
+
 h1 {
   text-align: center;
 }
 
-.statusinfo {
+/* navigation */
+nav {
+  display: flex;
+  justify-content: center;
+  background-color: #ddd;
+}
+nav > div {
+  flex-grow: 1;
+  flex-basis: 100%;
+  margin: 0.5ex 0.3em;
+  text-align: center;
+  background-color: #bbb;
+  cursor: pointer;
+}
+
+nav > div.active {
+  background-color: #bdb;
+}
+
+nav > div:hover {
+  background-color: #999;
+}
+
+nav > div.active:hover {
+  background-color: #9b9;
+}
+
+/* main content tab */
+
+main {
+}
+
+dl {
   display: grid;
   grid: "name value";
+  margin: 0;
 }
-.statusinfo > div {
+dl > * {
   padding: 0.5ex 1em;
+  margin: 0;
 }
-.statusinfo > div:nth-child(4n+3),
-.statusinfo > div:nth-child(4n+4) {
+dl > *:nth-child(4n+3),
+dl > *:nth-child(4n+4) {
   background-color: #eee;
 }
+
+dt::after {
+  content: " (*)";
+  visibility: hidden;
+  font-weight: bold;
+}
+dt.modified::after {
+  visibility: visible;
+}
+
+/* action buttons */
 
 .actions {
   display: flex;
@@ -40,7 +89,7 @@ h1 {
     </style>
   </head>
   <body>
-    <main id="app"></main>
+    <div id="app"></div>
 
     <script type="module">
 
@@ -51,6 +100,15 @@ import { h, text, app } from "./hyperapp.js"
 
 const fetchJson = (dispatch, [url, action]) => {
   fetch(url)
+  .then(response => response.json())
+  .then(data => dispatch(action, data))
+};
+
+const postRequest = (dispatch, [url, data, action]) => {
+  fetch(url, {
+    method: "POST",
+    body: new URLSearchParams(data),
+  })
   .then(response => response.json())
   .then(data => dispatch(action, data))
 };
@@ -75,6 +133,9 @@ const GotServerStatus = (state, serverstatus) => [
 const EnableInputs = (state) => ({...state, disableInputs: false});
 const DisableInputs = (state) => ({...state, disableInputs: true});
 
+const ShowTabStatus = (state) => ({...state, activeTab: "status"});
+const ShowTabPrefs = (state) => ({...state, activeTab: "prefs"});
+
 const ActivatePump = (state, event) => ([
   DisableInputs(state),
   [fetchJson, ["api/pump/activate", GotServerStatus]],
@@ -85,10 +146,38 @@ const ResetPumpTime = (state, event) => ([
   [fetchJson, ["api/pump/reset", GotServerStatus]],
 ]);
 
+const RebootServer = (state, event) => ([
+  DisableInputs(state),
+  [fetchJson, ["api/server/reboot", GotServerStatus]],
+]);
+
+/* TODO */
+const isDefaultValue = (state, key, value) => (state.serverstatus[key] == value);
+const hasDefaultValue = (state, key) => (
+  state.editstatus[key] == undefined || isDefaultValue(state, key, state.editstatus[key])
+);
+
+const PrefsSave = (state, event) => ([
+  DisableInputs(state),
+  [postRequest, ["prefs", state.editstatus, GotServerStatus]],
+]);
+
+const PrefsRestore = (state,) => ({...state, editstatus: {}});
+
+const EditNumber = (key, multiplier) => (state, event) =>  ({
+  ...state,
+  editstatus: {
+    ...state.editstatus,
+    [key]: event.target.value * (multiplier ?? 1),
+  },
+});
+
+
 app({
   init: [
     {
       disableInputs: true,
+      activeTab: "status",
       serverstatus: {
         serverTime: "",
         bootTime: "",
@@ -96,52 +185,97 @@ app({
         prevPumpTime: "",
         nextPumpTime: "",
         pumpInterval: "",
+        pumpDuration: "",
         numPumpEvents: "",
         sensorValue: "",
         temperature: "",
       },
+      editstatus: {}
     },
     [fetchJson, ["api/status", GotServerStatus]],
   ],
 
-  view: ({serverstatus, disableInputs}) => h("main", {}, [
+  view: ({serverstatus, activeTab, disableInputs, editstatus}) => h("div", {}, [
     h("h1", {}, text("PlantWaterOS")),
-    h("div", {class: "statusinfo"}, [
-      h("div", {}, text("Server time:")),
-      h("div", {}, text(serverstatus.serverTime)),
-      h("div", {}, text("Server boot time:")),
-      h("div", {}, text(serverstatus.bootTime)),
-      h("div", {}, text("IP:")),
-      h("div", {}, text(serverstatus.localIP)),
 
-      h("div", {}, text("Last pump time:")),
-      h("div", {}, text(serverstatus.prevPumpTime)),
-      h("div", {}, text("Next pump time:")),
-      h("div", {}, text(serverstatus.nextPumpTime)),
-      h("div", {}, text("Pump interval:")),
-      h("div", {}, text(serverstatus.pumpInterval + " days")),
-      h("div", {}, text("Total pump events:")),
-      h("div", {}, text(serverstatus.numPumpEvents)),
-
-      h("div", {}, text("Soil moisture:")),
-      h("div", {}, text(serverstatus.sensorValue)),
-      h("div", {}, text("Temperature:")),
-      h("div", {}, text(parseFloat(serverstatus.temperature).toFixed(1) + "°C")),
-
-      h("div", {}, text("System events:")),
-      h("div", {}, [
-        h("a", {href: "file/events.log", target: "_blank"}, text("events.log")),
-      ]),
-
-      h("div", {}, text("Logfile:")),
-      h("div", {}, [
-        h("a", {href: "file/sensor.log", target: "_blank"}, text("sensor.log")),
-      ]),
+    h("nav", {}, [
+      h("div", {onclick: ShowTabStatus, class: {active: activeTab == "status"}}, text("Status")),
+      h("div", {onclick: ShowTabPrefs, class: {active: activeTab == "prefs"}}, text("Preferences")),
     ]),
-    h("div", {class: "actions"}, [
-      h("button", {onclick: ActivatePump, disabled: disableInputs}, text("Pump now!")),
-      h("button", {onclick: ResetPumpTime, disabled: disableInputs}, text("Reset pump timer!")),
-    ]),
+
+    activeTab == "status" && h('main', {}, [
+      h("dl", {}, [
+        h("dt", {}, text("Server time:")),
+        h("dd", {}, text(serverstatus.serverTime)),
+        h("dt", {}, text("Server boot time:")),
+        h("dd", {}, text(serverstatus.bootTime)),
+        h("dt", {}, text("IP:")),
+        h("dd", {}, text(serverstatus.localIP)),
+
+        h("dt", {}, text("Last pump time:")),
+        h("dd", {}, text(serverstatus.prevPumpTime)),
+        h("dt", {}, text("Next pump time:")),
+        h("dd", {}, text(serverstatus.nextPumpTime)),
+
+        h("dt", {}, text("Total pump events:")),
+        h("dd", {}, text(serverstatus.numPumpEvents)),
+
+        h("dt", {}, text("Soil moisture:")),
+        h("dd", {}, text(serverstatus.sensorValue)),
+        h("dt", {}, text("Temperature:")),
+        h("dd", {}, text(parseFloat(serverstatus.temperature).toFixed(1) + "°C")),
+
+        h("dt", {}, text("System events:")),
+        h("dd", {}, [
+          h("a", {href: "file/events.log", target: "_blank"}, text("events.log")),
+        ]),
+
+        h("dt", {}, text("Logfile:")),
+        h("dd", {}, [
+          h("a", {href: "file/sensor.log", target: "_blank"}, text("sensor.log")),
+        ]),
+      ]), // </dl>
+
+      h("div", {class: "actions"}, [
+        h("button", {onclick: ActivatePump, disabled: disableInputs}, text("Pump now!")),
+        h("button", {onclick: ResetPumpTime, disabled: disableInputs}, text("Reset pump timer!")),
+        h("button", {onclick: RebootServer, disabled: disableInputs}, text("Reboot!")),
+      ]),
+    ]), // </main>
+
+    activeTab == "prefs" && h('main', {}, [
+      h("dl", {}, [
+        h("dt", {class: {modified: !hasDefaultValue({serverstatus, editstatus}, "pumpInterval")}}, text("Pump interval:")),
+        h("dd", {class: {modified: !hasDefaultValue({serverstatus, editstatus}, "pumpInterval")}}, [
+          h("input", {
+            type: "number",
+            value: (editstatus.pumpInterval ?? serverstatus.pumpInterval) / (24 * 3600),
+            min: "1",
+            max: "99",
+            oninput: EditNumber('pumpInterval', 24 * 3600),
+          }),
+          h("span", {}, text(" days")),
+        ]),
+
+        h("dt", {class: {modified: !hasDefaultValue({serverstatus, editstatus}, "pumpDuration")}}, text("Pump duration:")),
+        h("dd", {class: {modified: !hasDefaultValue({serverstatus, editstatus}, "pumpDuration")}}, [
+          h("input", {
+            type: "number",
+            value: editstatus.pumpDuration ?? serverstatus.pumpDuration,
+            min: "100",
+            max: "9999",
+            oninput: EditNumber('pumpDuration'),
+          }),
+          h("span", {}, text(" ms")),
+        ]),
+      ]), // </dl>
+
+      h("div", {class: "actions"}, [
+        h("button", {onclick: PrefsSave, disabled: disableInputs}, text("Save")),
+        h("button", {onclick: PrefsRestore, disabled: disableInputs}, text("Restore")),
+      ]),
+    ]), // </main>
+
   ]),
 
   node: document.getElementById("app"),

@@ -3,6 +3,9 @@
 #include <RTClib.h>
 
 
+const char* const PREFS_NAMESPACE = "PlantWaterOS";     // size <= 16!
+
+
 struct Temperature {
   int degreeCelsius;
 };
@@ -22,7 +25,6 @@ enum class MessageType {
 extern StreamString eventLog;
 
 extern const TimeSpan firstPumpDelay;
-extern const TimeSpan pumpInterval;
 extern const TimeSpan logInterval;
 
 extern DateTime now;
@@ -41,3 +43,10 @@ bool sendMessage(
     MessageType type,
     const void* data=nullptr,
     TickType_t waitTime=portMAX_DELAY);
+
+
+extern int getPumpDuration();
+extern bool setPumpDuration(int duration);
+
+extern int32_t getPumpInterval();
+extern bool setPumpInterval(int32_t interval);

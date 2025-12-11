@@ -10,6 +10,7 @@ app = Flask(__name__)
 state = SimpleNamespace()
 state.bootTime = datetime.now()
 state.pumpInterval = timedelta(3)
+state.pumpDuration = 2000
 state.prevPumpTime = datetime(2000, 1, 1, 0, 0, 0)
 state.nextPumpTime = state.prevPumpTime + state.pumpInterval
 state.numPumpEvents = 0
@@ -24,6 +25,7 @@ def main():
 
 def log(*text):
     print("{}:".format(format_time(datetime.now())), *text, file=logfile)
+    print("{}:".format(format_time(datetime.now())), *text)
 
 
 def format_time(dt):
@@ -63,7 +65,8 @@ def server_info():
         "localIP": "{}:{}".format(*request.server),
         "prevPumpTime": format_time(state.prevPumpTime),
         "nextPumpTime": format_time(state.nextPumpTime),
-        "pumpInterval": state.pumpInterval.days,
+        "pumpInterval": state.pumpInterval.total_seconds(),
+        "pumpDuration": state.pumpDuration,
         "numPumpEvents": state.numPumpEvents,
         "sensorValue": random.randint(800, 1200),
         "temperature": random.uniform(19, 21),
@@ -73,6 +76,12 @@ def server_info():
 @app.route("/api/status")
 def api_status():
     return server_info()
+
+
+@app.route("/api/server/reboot")
+def api_server_reboot():
+    log("Reboot")
+    return {}
 
 
 @app.route("/api/pump/activate")
@@ -88,6 +97,22 @@ def api_pump_activate():
 def api_pump_reset():
     state.nextPumpTime = datetime.now() + state.pumpInterval
     log("reset pump timer")
+    return server_info()
+
+
+@app.route("/prefs", methods=['POST'])
+def prefs():
+    data = request.form
+    log("updating prefs ", data)
+
+    pumpInterval = data.get("pumpInterval")
+    if pumpInterval is not None:
+        state.pumpInterval = timedelta(0, int(pumpInterval))
+
+    pumpDuration = data.get("pumpDuration")
+    if pumpDuration is not None:
+        state.pumpDuration = int(pumpDuration)
+
     return server_info()
 
 

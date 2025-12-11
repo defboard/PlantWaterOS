@@ -8,7 +8,7 @@
 #include <Stream.h>
 #include <ElegantOTA.h>
 #include <SD.h>
-
+#include <Preferences.h>
 
 // Globals
 WebServer server(80);
@@ -26,8 +26,10 @@ void onHttpHyperappJs();
 void onHttpFileEventsLog();
 void onHttpFileSensorLog();
 void onHttpApiStatus();
+void onHttpApiServerReboot();
 void onHttpApiPumpActivate();
 void onHttpApiPumpReset();
+void onHttpApiPrefsPost();
 void sendFile(int code, const char* content_type, const uint8_t* start, const uint8_t* end);
 
 
@@ -40,8 +42,10 @@ void initWebServer()
   server.on("/file/events.log", onHttpFileEventsLog);
   server.on("/file/sensor.log", onHttpFileSensorLog);
   server.on("/api/status", onHttpApiStatus);
+  server.on("/api/server/reboot", onHttpApiServerReboot);
   server.on("/api/pump/activate", onHttpApiPumpActivate);
   server.on("/api/pump/reset", onHttpApiPumpReset);
+  server.on("/prefs", HTTPMethod::HTTP_POST, onHttpApiPrefsPost);
 
   ElegantOTA.begin(&server);
   server.begin();
@@ -102,12 +106,20 @@ void onHttpApiStatus()
   json_str(response, "localIP", WiFi.localIP());
   json_str(response, "prevPumpTime", prevPumpTime);
   json_str(response, "nextPumpTime", nextPumpTime);
-  json_str(response, "pumpInterval", pumpInterval);
+  json_str(response, "pumpInterval", getPumpInterval());
+  json_plain(response, "pumpDuration", getPumpDuration());
   json_plain(response, "numPumpEvents", numPumpEvents);
   json_plain(response, "sensorValue", sensorValue);
   json_str(response, "temperature", temperature, true);
   response << '}';
   server.send(200, "application/json", response);
+}
+
+void onHttpApiServerReboot()
+{
+  server.send(200, "application/json", "{}");
+  delay(100);
+  esp_restart();
 }
 
 void onHttpApiPumpActivate()
@@ -121,5 +133,20 @@ void onHttpApiPumpReset()
 {
   sendMessage(MessageType::PumpTimerReset);
   delay(100);
+  onHttpApiStatus();
+}
+
+void onHttpApiPrefsPost()
+{
+  if (server.hasArg("pumpDuration")) {
+    int pumpDuration = server.arg("pumpDuration").toInt();
+    setPumpDuration(pumpDuration);
+  }
+
+  if (server.hasArg("pumpInterval")) {
+    int32_t pumpInterval = server.arg("pumpInterval").toInt();
+    setPumpInterval(pumpInterval);
+  }
+
   onHttpApiStatus();
 }
