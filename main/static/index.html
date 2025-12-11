@@ -205,23 +205,12 @@ const EditNumber = (key, multiplier) => (state, event) =>  ({
 const delta = (limits) => limits[1] - limits[0];
 const addMargin = (limits, margin) => [limits[0] - margin * delta(limits), limits[1] + margin * delta(limits)];
 
-class AffineTransform {
-  constructor(offset, slope) {
-    this.offset = offset;
-    this.slope = slope;
-  }
-
-  // Create a transform that maps values within the range [x1, x2] to the range [y1, y2]:
-  // x → (x - x1) / (x2 - x1) * (y2 - y1) + y1
-  static create([x1, x2], [y1, y2]) {
-    const slope = (y2 - y1) / (x2 - x1);
-    const offset = y1 - x1 * slope;
-    return new AffineTransform(offset, slope);
-  }
-
-  transform(x) {
-    return this.offset + this.slope * x;
-  }
+// Create a transform that maps values within the range [x1, x2] to the range [y1, y2]:
+// x → (x - x1) / (x2 - x1) * (y2 - y1) + y1
+const AffineTransform = ([x1, x2], [y1, y2]) => {
+  const slope = (y2 - y1) / (x2 - x1);
+  const offset = y1 - x1 * slope;
+  return (x) => offset + slope * x;
 };
 
 
@@ -242,7 +231,7 @@ const makeAxisTicks = ([x1, x2]) => {
 const drawXAxis = (axisBounds, xdataBounds, dataToFigure) => {
   const [x1, x2] = axisBounds.x;
   const [y1, y2] = axisBounds.y;
-  const axisTicks = makeAxisTicks(xdataBounds).map(x => dataToFigure.transform(x));
+  const axisTicks = makeAxisTicks(xdataBounds).map(x => dataToFigure(x));
   return [
     h("line", { x1, y1, x2: x2, y2: y1, class: "axis" }, []),
     ...axisTicks.map(x => (
@@ -255,7 +244,7 @@ const drawYAxis = (axisBounds, ydataBounds, dataToFigure) => {
   const [x1, x2] = axisBounds.x;
   const [y1, y2] = axisBounds.y;
   const axisTicks = makeAxisTicks(ydataBounds).map(y => ({
-    y: dataToFigure.transform(y),
+    y: dataToFigure(y),
     label: y,
   }));
   return [
@@ -281,8 +270,8 @@ const ShowGraph = ({sensorData}) => {
     const xlim = addMargin([Math.min(...xdata), Math.max(...xdata)], 0.1);
     const ylim = addMargin([Math.min(...ydata), Math.max(...ydata)], 0.1);
     const dataToFigure = {
-      x: AffineTransform.create(xlim, axisBounds.x),
-      y: AffineTransform.create(ylim, axisBounds.y),
+      x: AffineTransform(xlim, axisBounds.x),
+      y: AffineTransform(ylim, axisBounds.y),
     };
 
     return h("svg", { viewBox: "0 0 100 100" }, [
@@ -290,8 +279,8 @@ const ShowGraph = ({sensorData}) => {
         ...drawYAxis(axisBounds, ylim, dataToFigure.y),
         ...sensorData.map(([x, y]) => {
           return h("circle", {
-            cx: dataToFigure.x.transform(x),
-            cy: dataToFigure.y.transform(y),
+            cx: dataToFigure.x(x),
+            cy: dataToFigure.y(y),
             r: 0.5,
             class: "dataPoint",
           }, []);
