@@ -103,6 +103,12 @@ dt.modified::after {
   stroke-width: 0.2;
 }
 
+.xticklabel {
+  font-size: 3px;
+  text-anchor: middle;
+  dominant-baseline: hanging;
+}
+
 .yticklabel {
   font-size: 3px;
   text-anchor: end;
@@ -220,44 +226,87 @@ const makeAxisTicks = ([x1, x2]) => {
   const tickDeltaGuess = Array(20).keys().map(i => tickDeltaInit * (i + 1));
   const tickDelta = tickDeltaGuess.find(x => (x * 10 >= dx && x * 4 <= dx));
   let nextTick = Math.ceil(x1 / tickDelta) * tickDelta;
-  let ticks = [];
+  let tickmarks = [];
+  let ticklabels = [];
   while (nextTick < x2) {
-    ticks.push(nextTick);
+    tickmarks.push(nextTick);
+    ticklabels.push({loc: nextTick, label: nextTick});
     nextTick += tickDelta;
   }
-  return ticks;
+  return { tickmarks, ticklabels };
 };
 
-const drawXAxis = (axisBounds, xdataBounds, dataToFigure) => {
+
+const makeDateTicks = ([x1, x2]) => {
+  const date1 = new Date(x1 * 1000);
+  const date2 = new Date(x2 * 1000);
+
+  const SECONDS_PER_DAY = 3600 * 24;
+
+  const day1 = Date.UTC(date1.getFullYear(), date1.getMonth(), date1.getDate());
+  const day2 = Date.UTC(date2.getFullYear(), date2.getMonth(), date2.getDate());
+
+  const tickDelta = SECONDS_PER_DAY;
+  let nextTick = day1.valueOf() / 1000;
+  let lastTick = day2.valueOf() / 1000;
+  let tickmarks = [];
+  let ticklabels = [];
+  while (nextTick <= lastTick) {
+    if (nextTick >= x1 && nextTick <= x2) {
+      const asDate = new Date(nextTick * 1000);
+      tickmarks.push(nextTick);
+      ticklabels.push({
+        loc: nextTick + SECONDS_PER_DAY/2,
+        label: `${asDate.getDate()}.${asDate.getMonth() + 1}.`,
+      });
+    }
+    nextTick += tickDelta;
+  }
+
+  return { tickmarks, ticklabels };
+};
+
+const drawXAxis = (axisBounds, {tickmarks, ticklabels}, dataToFigure) => {
   const [x1, x2] = axisBounds.x;
   const [y1, y2] = axisBounds.y;
-  const axisTicks = makeAxisTicks(xdataBounds).map(x => dataToFigure(x));
   return [
     h("line", { x1, y1, x2: x2, y2: y1, class: "axis" }, []),
-    ...axisTicks.map(x => (
-      h("line", { x1: x, x2: x, y1: y1 - 1, y2: y1 + 1, class: "xtick" }, [])
-    )),
+
+    ...tickmarks.map(loc => {
+      const x = dataToFigure(loc);
+      return h("line", { x1: x, x2: x, y1: y1 - 1, y2: y1 + 1, class: "xtick" }, []);
+    }),
+    ...tickmarks.map(loc => {
+      const x = dataToFigure(loc);
+      return h("line", { x1: x, x2: x, y1, y2, class: "xgrid" }, [])
+    }),
+
+    ...ticklabels.map(({loc, label}) => {
+      const x = dataToFigure(loc);
+      return h("text", { x: x, y: y1 + 2, class: "xticklabel" }, text(label));
+    }),
   ];
 };
 
-const drawYAxis = (axisBounds, ydataBounds, dataToFigure) => {
+const drawYAxis = (axisBounds, {tickmarks, ticklabels}, dataToFigure) => {
   const [x1, x2] = axisBounds.x;
   const [y1, y2] = axisBounds.y;
-  const axisTicks = makeAxisTicks(ydataBounds).map(y => ({
-    y: dataToFigure(y),
-    label: y,
-  }));
   return [
     h("line", {  x1, y1, x2: x1, y2: y2, class: "axis" }, []),
-    ...axisTicks.map(({y}) => (
-      h("line", { y1: y, y2: y, x1: x1 - 1, x2: x1 + 1, class: "ytick" }, [])
-    )),
-    ...axisTicks.map(({y}) => (
-      h("line", { y1: y, y2: y, x1, x2, class: "ygrid" }, [])
-    )),
-    ...axisTicks.map(({y, label}) => (
-      h("text", { x: x1 - 2, y: y, class: "yticklabel" }, text(label))
-    )),
+
+    ...tickmarks.map(loc => {
+      const y = dataToFigure(loc);
+      return h("line", { y1: y, y2: y, x1: x1 - 1, x2: x1 + 1, class: "ytick" }, []);
+    }),
+    ...tickmarks.map(loc => {
+      const y = dataToFigure(loc);
+      return h("line", { y1: y, y2: y, x1, x2, class: "ygrid" }, []);
+    }),
+
+    ...ticklabels.map(({loc, label}) => {
+      const y = dataToFigure(loc);
+      return h("text", { x: x1 - 2, y: y, class: "yticklabel" }, text(label));
+    }),
   ];
 };
 
@@ -267,16 +316,21 @@ const ShowGraph = ({sensorData}) => {
 
     const xdata = sensorData.map(elem => elem[0]);
     const ydata = sensorData.map(elem => elem[1]);
-    const xlim = addMargin([Math.min(...xdata), Math.max(...xdata)], 0.1);
-    const ylim = addMargin([Math.min(...ydata), Math.max(...ydata)], 0.1);
+    const xdatalim = [Math.min(...xdata), Math.max(...xdata)];
+    const ydatalim = [Math.min(...ydata), Math.max(...ydata)];
+    const xlim = addMargin(xdatalim, 0.1);
+    const ylim = addMargin(ydatalim, 0.1);
+    const xticks = makeDateTicks(xlim);
+    const yticks = makeAxisTicks(ylim);
+
     const dataToFigure = {
       x: AffineTransform(xlim, axisBounds.x),
       y: AffineTransform(ylim, axisBounds.y),
     };
 
     return h("svg", { viewBox: "0 0 100 100" }, [
-        ...drawXAxis(axisBounds, xlim, dataToFigure.x),
-        ...drawYAxis(axisBounds, ylim, dataToFigure.y),
+        ...drawXAxis(axisBounds, xticks, dataToFigure.x),
+        ...drawYAxis(axisBounds, yticks, dataToFigure.y),
         ...sensorData.map(([x, y]) => {
           return h("circle", {
             cx: dataToFigure.x(x),
