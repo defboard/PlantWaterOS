@@ -3,9 +3,13 @@ from flask import Flask, send_from_directory, request
 from datetime import datetime, timedelta
 from types import SimpleNamespace
 from io import StringIO
+import json
 import random
 
 app = Flask(__name__)
+
+with open('serverstatus.json') as f:
+    example = json.load(f)
 
 state = SimpleNamespace()
 state.bootTime = datetime.now()
@@ -14,15 +18,8 @@ state.pumpDuration = 2000
 state.prevPumpTime = datetime(2000, 1, 1, 0, 0, 0)
 state.nextPumpTime = state.prevPumpTime + state.pumpInterval
 state.numPumpEvents = 0
-state.sensorData = [
-    [120923, 1200],
-    [120925, 1101],
-    [120926, 1305],
-    [120930, 1800],
-    [120935, 900],
-    [120930, 1150],
-    [120935, 950],
-]
+state.sensorData = example['sensorData'][:]
+
 
 logfile = StringIO()
 
