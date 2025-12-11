@@ -211,22 +211,16 @@ class AffineTransform {
     this.slope = slope;
   }
 
-  static fromBounds([x1, x2]) {
-    return new AffineTransform(x1, x2 - x1);
-  }
-
-  inverse() {
-    return new AffineTransform(- this.offset / this.slope, 1 / this.slope);
+  // Create a transform that maps values within the range [x1, x2] to the range [y1, y2]:
+  // x → (x - x1) / (x2 - x1) * (y2 - y1) + y1
+  static create([x1, x2], [y1, y2]) {
+    const slope = (y2 - y1) / (x2 - x1);
+    const offset = y1 - x1 * slope;
+    return new AffineTransform(offset, slope);
   }
 
   transform(x) {
     return this.offset + this.slope * x;
-  }
-
-  compose(other) {
-    return new AffineTransform(
-      this.transform(other.offset),
-      this.slope * other.slope);
   }
 };
 
@@ -281,22 +275,14 @@ const drawYAxis = (axisBounds, ydataBounds, dataToFigure) => {
 
 const ShowGraph = ({sensorData}) => {
     const axisBounds = {x: [10, 95], y: [90, 5]};
-    const axisToFigure = {
-      x: AffineTransform.fromBounds(axisBounds.x),
-      y: AffineTransform.fromBounds(axisBounds.y),
-    };
 
     const xdata = sensorData.map(elem => elem[0]);
     const ydata = sensorData.map(elem => elem[1]);
     const xlim = addMargin([Math.min(...xdata), Math.max(...xdata)], 0.1);
     const ylim = addMargin([Math.min(...ydata), Math.max(...ydata)], 0.1);
-    const dataToAxis = {
-      x: AffineTransform.fromBounds(xlim).inverse(),
-      y: AffineTransform.fromBounds(ylim).inverse(),
-    };
     const dataToFigure = {
-      x: axisToFigure.x.compose(dataToAxis.x),
-      y: axisToFigure.y.compose(dataToAxis.y),
+      x: AffineTransform.create(xlim, axisBounds.x),
+      y: AffineTransform.create(ylim, axisBounds.y),
     };
 
     return h("svg", { viewBox: "0 0 100 100" }, [
