@@ -86,6 +86,40 @@ dt.modified::after {
   margin: 0.5ex 0.1em;
 }
 
+/* Plot */
+.dataPoint {
+  stroke: black;
+  stroke-width: 0.2;
+  fill: #00f;
+}
+
+.axis {
+  stroke: black;
+  stroke-width: 0.3;
+}
+
+.xtick, .ytick {
+  stroke: black;
+  stroke-width: 0.2;
+}
+
+.xticklabel {
+  font-size: 3px;
+  text-anchor: middle;
+  dominant-baseline: hanging;
+}
+
+.yticklabel {
+  font-size: 3px;
+  text-anchor: end;
+  dominant-baseline: middle;
+}
+
+.xgrid, .ygrid {
+  stroke: gray;
+  stroke-width: 0.1;
+}
+
     </style>
   </head>
   <body>
@@ -172,6 +206,142 @@ const EditNumber = (key, multiplier) => (state, event) =>  ({
   },
 });
 
+// plotting
+
+const delta = (limits) => limits[1] - limits[0];
+const addMargin = (limits, margin) => [limits[0] - margin * delta(limits), limits[1] + margin * delta(limits)];
+
+// Create a transform that maps values within the range [x1, x2] to the range [y1, y2]:
+// x → (x - x1) / (x2 - x1) * (y2 - y1) + y1
+const AffineTransform = ([x1, x2], [y1, y2]) => {
+  const slope = (y2 - y1) / (x2 - x1);
+  const offset = y1 - x1 * slope;
+  return (x) => offset + slope * x;
+};
+
+
+const makeAxisTicks = ([x1, x2]) => {
+  const dx = x2 - x1;
+  const tickDeltaInit = Math.pow(10, Math.floor(Math.log10(dx)) - 1);
+  const tickDeltaGuess = Array(20).keys().map(i => tickDeltaInit * (i + 1));
+  const tickDelta = tickDeltaGuess.find(x => (x * 10 >= dx && x * 4 <= dx));
+  let nextTick = Math.ceil(x1 / tickDelta) * tickDelta;
+  let tickmarks = [];
+  let ticklabels = [];
+  while (nextTick < x2) {
+    tickmarks.push(nextTick);
+    ticklabels.push({loc: nextTick, label: nextTick});
+    nextTick += tickDelta;
+  }
+  return { tickmarks, ticklabels };
+};
+
+
+const makeDateTicks = ([x1, x2]) => {
+  const date1 = new Date(x1 * 1000);
+  const date2 = new Date(x2 * 1000);
+
+  const SECONDS_PER_DAY = 3600 * 24;
+
+  const day1 = Date.UTC(date1.getFullYear(), date1.getMonth(), date1.getDate());
+  const day2 = Date.UTC(date2.getFullYear(), date2.getMonth(), date2.getDate());
+
+  const tickDelta = SECONDS_PER_DAY;
+  let nextTick = day1.valueOf() / 1000;
+  let lastTick = day2.valueOf() / 1000;
+  let tickmarks = [];
+  let ticklabels = [];
+  while (nextTick <= lastTick) {
+    if (nextTick >= x1 && nextTick <= x2) {
+      const asDate = new Date(nextTick * 1000);
+      tickmarks.push(nextTick);
+      ticklabels.push({
+        loc: nextTick + SECONDS_PER_DAY/2,
+        label: `${asDate.getDate()}.${asDate.getMonth() + 1}.`,
+      });
+    }
+    nextTick += tickDelta;
+  }
+
+  return { tickmarks, ticklabels };
+};
+
+const drawXAxis = (axisBounds, {tickmarks, ticklabels}, dataToFigure) => {
+  const [x1, x2] = axisBounds.x;
+  const [y1, y2] = axisBounds.y;
+  return [
+    h("line", { x1, y1, x2: x2, y2: y1, class: "axis" }, []),
+
+    ...tickmarks.map(loc => {
+      const x = dataToFigure(loc);
+      return h("line", { x1: x, x2: x, y1: y1 - 1, y2: y1 + 1, class: "xtick" }, []);
+    }),
+    ...tickmarks.map(loc => {
+      const x = dataToFigure(loc);
+      return h("line", { x1: x, x2: x, y1, y2, class: "xgrid" }, [])
+    }),
+
+    ...ticklabels.map(({loc, label}) => {
+      const x = dataToFigure(loc);
+      return h("text", { x: x, y: y1 + 2, class: "xticklabel" }, text(label));
+    }),
+  ];
+};
+
+const drawYAxis = (axisBounds, {tickmarks, ticklabels}, dataToFigure) => {
+  const [x1, x2] = axisBounds.x;
+  const [y1, y2] = axisBounds.y;
+  return [
+    h("line", {  x1, y1, x2: x1, y2: y2, class: "axis" }, []),
+
+    ...tickmarks.map(loc => {
+      const y = dataToFigure(loc);
+      return h("line", { y1: y, y2: y, x1: x1 - 1, x2: x1 + 1, class: "ytick" }, []);
+    }),
+    ...tickmarks.map(loc => {
+      const y = dataToFigure(loc);
+      return h("line", { y1: y, y2: y, x1, x2, class: "ygrid" }, []);
+    }),
+
+    ...ticklabels.map(({loc, label}) => {
+      const y = dataToFigure(loc);
+      return h("text", { x: x1 - 2, y: y, class: "yticklabel" }, text(label));
+    }),
+  ];
+};
+
+
+const ShowGraph = ({sensorData}) => {
+    const axisBounds = {x: [10, 95], y: [90, 5]};
+
+    const xdata = sensorData.map(elem => elem[0]);
+    const ydata = sensorData.map(elem => elem[1]);
+    const xdatalim = [Math.min(...xdata), Math.max(...xdata)];
+    const ydatalim = [Math.min(...ydata), Math.max(...ydata)];
+    const xlim = addMargin(xdatalim, 0.1);
+    const ylim = addMargin(ydatalim, 0.1);
+    const xticks = makeDateTicks(xlim);
+    const yticks = makeAxisTicks(ylim);
+
+    const dataToFigure = {
+      x: AffineTransform(xlim, axisBounds.x),
+      y: AffineTransform(ylim, axisBounds.y),
+    };
+
+    return h("svg", { viewBox: "0 0 100 100" }, [
+        ...drawXAxis(axisBounds, xticks, dataToFigure.x),
+        ...drawYAxis(axisBounds, yticks, dataToFigure.y),
+        ...sensorData.map(([x, y]) => {
+          return h("circle", {
+            cx: dataToFigure.x(x),
+            cy: dataToFigure.y(y),
+            r: 0.5,
+            class: "dataPoint",
+          }, []);
+        }),
+    ]);
+};
+
 
 app({
   init: [
@@ -189,6 +359,7 @@ app({
         numPumpEvents: "",
         sensorValue: "",
         temperature: "",
+        sensorData: [],
       },
       editstatus: {}
     },
@@ -246,6 +417,8 @@ app({
         h("button", {onclick: ResetPumpTime, disabled: disableInputs}, text("Reset pump timer!")),
         h("button", {onclick: RebootServer, disabled: disableInputs}, text("Reboot!")),
       ]),
+
+      ShowGraph(serverstatus),
     ]), // </main>
 
     activeTab == "prefs" && h('main', {}, [
@@ -279,6 +452,8 @@ app({
         h("button", {onclick: PrefsSave, disabled: disableInputs}, text("Save")),
         h("button", {onclick: PrefsRestore, disabled: disableInputs}, text("Restore")),
       ]),
+
+      ShowGraph(serverstatus),
     ]), // </main>
 
   ]),

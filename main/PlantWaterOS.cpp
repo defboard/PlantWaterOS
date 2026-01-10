@@ -83,6 +83,7 @@ int numPumpEvents = 0;
 
 int sensorValue = 0;
 Temperature temperature;
+RingBuffer<SensorRecord, 1000> sensorRecords;
 
 Button mainButton(BTN_RCV_PIN);
 Button stickButton(PIN_STICK_BTN);
@@ -405,6 +406,9 @@ void readSensor()
   if (curSensorRepeat < numSensorRepeat) {
     logfile.open();
     logfile << now << ": " << curSensorRepeat << " " << temperature << " " << sensorValue << endl;
+    if (curSensorRepeat == numSensorRepeat/2) {
+      sensorRecords.push_back(SensorRecord{now.unixtime(), sensorValue});
+    }
     ++curSensorRepeat;
   }
 }

@@ -1,4 +1,6 @@
 #pragma once
+#include "RingBuffer.hpp"
+
 #include <StreamString.h>
 #include <RTClib.h>
 
@@ -21,6 +23,12 @@ enum class MessageType {
   SensorRead,
 };
 
+
+struct SensorRecord {
+    uint32_t time;
+    int value;
+};
+extern RingBuffer<SensorRecord, 1000> sensorRecords;
 
 extern StreamString eventLog;
 

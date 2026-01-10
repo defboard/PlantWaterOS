@@ -110,6 +110,7 @@ void onHttpApiStatus()
   json_plain(response, "pumpDuration", getPumpDuration());
   json_plain(response, "numPumpEvents", numPumpEvents);
   json_plain(response, "sensorValue", sensorValue);
+  json_plain_array(response, "sensorData", sensorRecords);
   json_str(response, "temperature", temperature, true);
   response << '}';
   server.send(200, "application/json", response);
