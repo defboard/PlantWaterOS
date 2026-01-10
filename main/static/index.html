@@ -130,6 +130,40 @@ dt.modified::after {
 import { h, text, app } from "./hyperapp.js"
 
 
+// Local storage
+
+const storageKey = 'WaterPlantOS';
+const savedState = JSON.parse(localStorage.getItem(storageKey) || "{}");
+const initialState = {
+  serverstatus: {
+    serverTime: "",
+    bootTime: "",
+    localIP: "",
+    prevPumpTime: "",
+    nextPumpTime: "",
+    pumpInterval: "",
+    pumpDuration: "",
+    numPumpEvents: "",
+    sensorValue: "",
+    temperature: "",
+    sensorData: [],
+  },
+  // client
+  activeTab: "status",
+  editstatus: {},
+  ...savedState,
+  disableInputs: true,
+};
+
+const storeLocal = (state) => {
+  localStorage.setItem(storageKey, JSON.stringify({
+    activeTab: state.activeTab,
+    editstatus: state.editstatus,
+  }));
+  return state;
+};
+
+
 // Effects
 
 const fetchJson = (dispatch, [url, action]) => {
@@ -157,18 +191,18 @@ const timeout = (dispatch, [delay, action]) => {
 const DISABLE_TIMEOUT = 750;
 
 const GotServerStatus = (state, serverstatus) => [
-  {...state, serverstatus: {...state.serverstatus, ...serverstatus}},
+  storeLocal({...state, serverstatus: {...state.serverstatus, ...serverstatus}}),
   [timeout, [DISABLE_TIMEOUT, EnableInputs]],
 ];
 
 
 // Actions
 
-const EnableInputs = (state) => ({...state, disableInputs: false});
-const DisableInputs = (state) => ({...state, disableInputs: true});
+const EnableInputs = (state) => storeLocal({...state, disableInputs: false});
+const DisableInputs = (state) => storeLocal({...state, disableInputs: true});
 
-const ShowTabStatus = (state) => ({...state, activeTab: "status"});
-const ShowTabPrefs = (state) => ({...state, activeTab: "prefs"});
+const ShowTabStatus = (state) => storeLocal({...state, activeTab: "status"});
+const ShowTabPrefs = (state) => storeLocal({...state, activeTab: "prefs"});
 
 const ActivatePump = (state, event) => ([
   DisableInputs(state),
@@ -196,9 +230,9 @@ const PrefsSave = (state, event) => ([
   [postRequest, ["prefs", state.editstatus, GotServerStatus]],
 ]);
 
-const PrefsRestore = (state,) => ({...state, editstatus: {}});
+const PrefsRestore = (state,) => storeLocal({...state, editstatus: {}});
 
-const EditNumber = (key, multiplier) => (state, event) =>  ({
+const EditNumber = (key, multiplier) => (state, event) =>  storeLocal({
   ...state,
   editstatus: {
     ...state.editstatus,
@@ -345,24 +379,7 @@ const ShowGraph = ({sensorData}) => {
 
 app({
   init: [
-    {
-      disableInputs: true,
-      activeTab: "status",
-      serverstatus: {
-        serverTime: "",
-        bootTime: "",
-        localIP: "",
-        prevPumpTime: "",
-        nextPumpTime: "",
-        pumpInterval: "",
-        pumpDuration: "",
-        numPumpEvents: "",
-        sensorValue: "",
-        temperature: "",
-        sensorData: [],
-      },
-      editstatus: {}
-    },
+    initialState,
     [fetchJson, ["api/status", GotServerStatus]],
   ],
 
