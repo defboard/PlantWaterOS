@@ -115,8 +115,7 @@ void onHttpApiStatus()
   json.put_plain("sensorValue", sensorValue);
 
   json.put_array("sensorData");
-  for (size_t i = 0; i < sensorRecords.size(); ++i) {
-    const SensorRecord& record = sensorRecords[i];
+  for (const SensorRecord& record : sensorRecords) {
     json.put_array();
     json.put_plain(record.time);
     json.put_plain(record.value);
