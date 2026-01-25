@@ -100,19 +100,33 @@ void onHttpFileSensorLog()
 void onHttpApiStatus()
 {
   StreamString response;
-  response << '{';
-  json_str(response, "serverTime", now);
-  json_str(response, "bootTime", bootTime);
-  json_str(response, "localIP", WiFi.localIP());
-  json_str(response, "prevPumpTime", prevPumpTime);
-  json_str(response, "nextPumpTime", nextPumpTime);
-  json_str(response, "pumpInterval", getPumpInterval());
-  json_plain(response, "pumpDuration", getPumpDuration());
-  json_plain(response, "numPumpEvents", numPumpEvents);
-  json_plain(response, "sensorValue", sensorValue);
-  json_plain_array(response, "sensorData", sensorRecords);
-  json_str(response, "temperature", temperature, true);
-  response << '}';
+  JsonWriter json(response);
+
+  json.put_object();
+  json.put_string("serverTime", now);
+  json.put_string("bootTime", bootTime);
+  json.put_string("localIP", WiFi.localIP());
+  json.put_string("prevPumpTime", prevPumpTime);
+  json.put_string("nextPumpTime", nextPumpTime);
+  json.put_string("pumpInterval", getPumpInterval());
+
+  json.put_plain("pumpDuration", getPumpDuration());
+  json.put_plain("numPumpEvents", numPumpEvents);
+  json.put_plain("sensorValue", sensorValue);
+
+  json.put_array("sensorData");
+  for (size_t i = 0; i < sensorRecords.size(); ++i) {
+    const SensorRecord& record = sensorRecords[i];
+    json.put_array();
+    json.put_plain(record.time);
+    json.put_plain(record.value);
+    json.end_array();
+  }
+  json.end_array();
+
+  json.put_string("temperature", temperature);
+  json.end_object();
+
   server.send(200, "application/json", response);
 }
 

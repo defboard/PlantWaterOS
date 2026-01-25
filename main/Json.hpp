@@ -1,37 +1,186 @@
 #pragma once
-#include <Stream.h>
+#include <Print.h>
+#include "Formatting.hpp"
+
+const char HEX_DIGITS[16] = {
+    '0', '1', '2', '3', '4', '5', '6', '7',
+    '8', '9', 'a', 'b', 'c', 'd', 'e', 'f',
+};
 
 
-template <class T>
-void json_str(Stream& out, const char* key, const T& value, bool last=false)
+class JsonStringWriter : public Print
 {
-  out << '"' << key << "\": \"" << value << '"';
-  if (not last) {
-    out << ',';
+  Print& _p;
+public:
+  explicit JsonStringWriter(Print& p)
+    : _p(p)
+  {
+    _p.write('"');
   }
-}
 
-template <class T>
-void json_plain(Stream& out, const char* key, const T& value, bool last=false)
-{
-  out << '"' << key << "\": " << value;
-  if (not last) {
-    out << ',';
+  ~JsonStringWriter() final
+  {
+    _p.write('"');
   }
-}
 
-template <class T>
-void json_plain_array(Stream& out, const char* key, const T& array, bool last=false)
-{
-  out << '"' << key << "\": [";
-  for (size_t i = 0; i < array.size(); i++) {
-    out << array[i];
-    if (i + 1 < array.size()) {
-      out << ',';
+  size_t write(uint8_t c) final
+  {
+    switch (c) {
+    case '"':
+        return _p.write("\\\"", 2);
+    case '\\':
+        return _p.write("\\\\", 2);
+    case '\b':
+        return _p.write("\\b", 2);
+    case '\f':
+        return _p.write("\\f", 2);
+    case '\n':
+        return _p.write("\\n", 2);
+    case '\r':
+        return _p.write("\\r", 2);
+    case '\t':
+        return _p.write("\\t", 2);
+    default:
+        if (c <= '\x1f') {
+            size_t result = 0;
+            result += _p.write("\\u00", 4);
+            result += _p.write(HEX_DIGITS[0x0f & (c >> 4)]);
+            result += _p.write(HEX_DIGITS[0x0f & (c)]);
+            return result;
+        }
+        break;
+    }
+    return _p.write(c);
+  }
+};
+
+
+class JsonWriter {
+  Print& _p;
+  bool _comma = false;
+
+  inline void _put_comma()
+  {
+    if (_comma) {
+      _p.write(',');
     }
   }
-  out << ']';
-  if (not last) {
-      out << ',';
+
+public:
+  explicit JsonWriter(Print& p)
+    : _p(p)
+  {
   }
-}
+
+  void put_object()
+  {
+    _put_comma();
+    _p.write('{');
+    _comma = false;
+  }
+
+  void end_object()
+  {
+    _p.write('}');
+    _comma = true;
+  }
+
+  void put_array()
+  {
+    _put_comma();
+    _p.write('[');
+    _comma = false;
+  }
+
+  void end_array()
+  {
+    _p.write(']');
+    _comma = true;
+  }
+
+  template <class V>
+  void put_string(const V& value)
+  {
+    _put_comma();
+    _comma = true;
+    JsonStringWriter w(_p);
+    w << value;
+  }
+
+  template <class V>
+  void put_plain(const V& value)
+  {
+    _put_comma();
+    _comma = true;
+    _p << value;
+  }
+
+  void put_bool(bool value)
+  {
+    _put_comma();
+    _comma = true;
+    if (value) {
+      _p.write("true", 4);
+    }
+    else {
+      _p.write("false", 5);
+    }
+  }
+
+  void put_null() {
+    _put_comma();
+    _comma = true;
+    _p.write("null", 4);
+  }
+
+
+  template <class K>
+  void put_key(const K& key)
+  {
+    put_string(key);
+    _p.write(':');
+    _comma = false;
+  }
+
+  template <class K>
+  void put_object(const K& key)
+  {
+    put_key(key);
+    put_object();
+  }
+
+  template <class K>
+  void put_array(const K& key)
+  {
+    put_key(key);
+    put_array();
+  }
+
+  template <class K, class V>
+  inline void put_string(const K& key, const V& value)
+  {
+    put_key(key);
+    put_string(value);
+  }
+
+  template <class K, class V>
+  inline void put_plain(const K& key, const V& value)
+  {
+    put_key(key);
+    put_plain(value);
+  }
+
+  template <class K, class V>
+  inline void put_bool(const K& key, bool value)
+  {
+    put_key(key);
+    put_bool(value);
+  }
+
+  template <class K, class V>
+  inline void put_null(const K& key, bool value)
+  {
+    put_key(key);
+    put_null();
+  }
+};
