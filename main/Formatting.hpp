@@ -92,6 +92,14 @@ inline Print& operator<< (Print& out, StreamFormatter f)
   return out;
 }
 
+template <class T>
+inline String to_str(const T& value)
+{
+  StreamString text;
+  text << value;
+  return text;
+}
+
 class CheckSuccess : public Printable {
   bool success_;
 public:

@@ -1,9 +1,9 @@
 #include "Server.hpp"
 
 #include "Formatting.hpp"
-#include "Json.hpp"
 #include "PlantWaterOS.hpp"
 
+#include <ArduinoJson.h>
 #include <WebServer.h>
 #include <Stream.h>
 #include <ElegantOTA.h>
@@ -99,20 +99,27 @@ void onHttpFileSensorLog()
 
 void onHttpApiStatus()
 {
-  StreamString response;
-  response << '{';
-  json_str(response, "serverTime", now);
-  json_str(response, "bootTime", bootTime);
-  json_str(response, "localIP", WiFi.localIP());
-  json_str(response, "prevPumpTime", prevPumpTime);
-  json_str(response, "nextPumpTime", nextPumpTime);
-  json_str(response, "pumpInterval", getPumpInterval());
-  json_plain(response, "pumpDuration", getPumpDuration());
-  json_plain(response, "numPumpEvents", numPumpEvents);
-  json_plain(response, "sensorValue", sensorValue);
-  json_plain_array(response, "sensorData", sensorRecords);
-  json_str(response, "temperature", temperature, true);
-  response << '}';
+  JsonDocument doc;
+  doc["serverTime"] = to_str(now);
+  doc["bootTime"] = to_str(bootTime);
+  doc["localIP"] = WiFi.localIP();
+  doc["prevPumpTime"] = to_str(prevPumpTime);
+  doc["nextPumpTime"] = to_str(nextPumpTime);
+  doc["pumpInterval"] = getPumpInterval();
+  doc["pumpDuration"] = getPumpDuration();
+  doc["numPumpEvents"] = numPumpEvents;
+  doc["sensorValue"] = sensorValue;
+  doc["temperature"] = to_str(temperature);
+
+  JsonArray data = doc["sensorData"].to<JsonArray>();
+  for (size_t i = 0; i < sensorRecords.size(); ++i) {
+    const auto& record = sensorRecords[i];
+    data.add(serialized(to_str(record)));
+  }
+  String response;
+
+  serializeJson(doc, response);
+
   server.send(200, "application/json", response);
 }
 

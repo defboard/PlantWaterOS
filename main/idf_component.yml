@@ -2,3 +2,5 @@ dependencies:
   espressif/arduino-esp32:
     pre_release: true
     version: '*'
+  bblanchon/arduinojson:
+    version: '7.4.2'

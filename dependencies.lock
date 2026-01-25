@@ -1,4 +1,11 @@
 dependencies:
+  bblanchon/arduinojson:
+    component_hash: b1c2f0b0bc26969af19809cee80b220fb882481d59cc75f8e79ebceecdc69f06
+    dependencies: []
+    source:
+      registry_url: https://components.espressif.com/
+      type: service
+    version: 7.4.2
   chmorgan/esp-libhelix-mp3:
     component_hash: cbb76089dc2c5749f7b470e2e70aedc44c9da519e04eb9a67d4c7ec275229e53
     dependencies:
@@ -254,7 +261,7 @@ dependencies:
       type: service
     version: 1.2.2
   espressif/esp_modem:
-    component_hash: b541c3f5765d3ba062c0d004b9ca6da6d0af908293421c2dbe046c537fb2a011
+    component_hash: 40af7f39c6c8c0c85c98014721fca8d9d2186f18f70645c66b94548192cf1e03
     dependencies:
     - name: idf
       require: private
@@ -262,7 +269,7 @@ dependencies:
     source:
       registry_url: https://components.espressif.com
       type: service
-    version: 1.4.0
+    version: 1.4.2
   espressif/esp_rainmaker:
     component_hash: f6fe458fc7a0102ee2879f0247da4b41419e6c07de12031f66e5e9454d25baaa
     dependencies:
@@ -336,7 +343,7 @@ dependencies:
       type: service
     version: 1.2.0
   espressif/esp_secure_cert_mgr:
-    component_hash: 47589860736b456608035b06d88e6a5dab566419fa8737a76a4f33c611ec539b
+    component_hash: 29248e402b2014394228b289a3c02fdb1dc43168ef18fc83449a868dfbc2341f
     dependencies:
     - name: idf
       require: private
@@ -344,7 +351,7 @@ dependencies:
     source:
       registry_url: https://components.espressif.com
       type: service
-    version: 2.7.0
+    version: 2.8.0
   espressif/jsmn:
     component_hash: d80350c41bbaa827c98a25b6072df00884e72f54885996fab4a4f0aebce6b6c3
     dependencies:
@@ -403,7 +410,7 @@ dependencies:
       type: service
     version: 1.0.0
   espressif/libsodium:
-    component_hash: 25b968723c584a2742ca36cebe5a7ef049c6767e059f7b1e1eec69946019025d
+    component_hash: 6ee084dee7a4d664498274870aa65391c9ec9d38dcdb34d2ad2b8518726f8b5e
     dependencies:
     - name: idf
       require: private
@@ -411,9 +418,9 @@ dependencies:
     source:
       registry_url: https://components.espressif.com
       type: service
-    version: 1.0.20~2
+    version: 1.0.20~3
   espressif/mdns:
-    component_hash: 3ec0af5f6bce310512e90f482388d21cc7c0e99668172d2f895356165fc6f7c5
+    component_hash: 29e47564b1a7ee778135e17fbbf2a2773f71c97ebabfe626c8eda7c958a7ad16
     dependencies:
     - name: idf
       require: private
@@ -421,7 +428,7 @@ dependencies:
     source:
       registry_url: https://components.espressif.com
       type: service
-    version: 1.8.2
+    version: 1.9.1
   espressif/network_provisioning:
     component_hash: ef2e10182fd1861e68b821491916327c25416ca7ae70e5a6e43313dbc71fe993
     dependencies:
@@ -451,7 +458,7 @@ dependencies:
       type: idf
     version: 5.5.0
   joltwallet/littlefs:
-    component_hash: 8e12955f47e27e6070b76715a96d6c75fc2b44f069e8c33679332d9bdd3120c4
+    component_hash: 1808d73e99168f6f3c26dd31799a248484762b3a320ec4962dec11a145f4277f
     dependencies:
     - name: idf
       require: private
@@ -459,9 +466,10 @@ dependencies:
     source:
       registry_url: https://components.espressif.com
       type: service
-    version: 1.20.1
+    version: 1.20.3
 direct_dependencies:
+- bblanchon/arduinojson
 - espressif/arduino-esp32
-manifest_hash: 5b4524ecb7330caba405fc933ed73c09285897f2c02ad54d7be89f2a44947693
+manifest_hash: b77eeee11d5203af31f395944be66346bb38014310e6bb743a60007b93d60d3d
 target: esp32
 version: 2.0.0
