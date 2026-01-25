@@ -92,19 +92,7 @@ inline Print& operator<< (Print& out, StreamFormatter f)
   return out;
 }
 
-class CheckSuccess : public Printable {
-  bool success_;
-public:
-  explicit CheckSuccess(bool success)
-    : success_(success)
-  {
-  }
-
-  size_t printTo(Print& out) const final {
-    size_t result = out.println(success_ ? F("SUCCESS!") : F("FAILED!"));
-    if (not success_) {
-     // abort();
-    }
-    return result;
-  }
-};
+const char* CheckSuccess(bool success)
+{
+  return success ? "SUCCESS!" : "FAILED!";
+}
