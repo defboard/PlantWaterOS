@@ -38,10 +38,10 @@ public:
   {
     friend class RingBuffer;
 
-    RingBuffer& rb_;
+    const RingBuffer& rb_;
     size_t offset_;
 
-    iterator(RingBuffer& rb, size_t offset)
+    iterator(const RingBuffer& rb, size_t offset)
         : rb_(rb)
         , offset_(offset)
     {
