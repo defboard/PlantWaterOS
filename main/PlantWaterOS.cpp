@@ -129,27 +129,27 @@ void setup()
   // mainButton.begin();
 
   // Init RTC
-  eventLog << F("Init Wire: ") << CheckSuccess(Wire.begin(PIN_RTC_SDA, PIN_RTC_SCL));
-  eventLog << F("Init RTC: ") << CheckSuccess(rtc.begin(&Wire));
+  eventLog << "Init Wire: " << CheckSuccess(Wire.begin(PIN_RTC_SDA, PIN_RTC_SCL));
+  eventLog << "Init RTC: " << CheckSuccess(rtc.begin(&Wire));
   rtc.disable32K();
   rtc.writeSqwPinMode(Ds3231SqwPinMode::DS3231_OFF);
 
   // Init SD
-  eventLog << F("Init SPI: ") << CheckSuccess(SPI.begin(PIN_SD_SCLK, PIN_SD_MISO, PIN_SD_MOSI, PIN_SD_CS));
-  eventLog << F("Init SD: ") << CheckSuccess(SD.begin(PIN_SD_CS, SPI));
+  eventLog << "Init SPI: " << CheckSuccess(SPI.begin(PIN_SD_SCLK, PIN_SD_MISO, PIN_SD_MOSI, PIN_SD_CS));
+  eventLog << "Init SD: " << CheckSuccess(SD.begin(PIN_SD_CS, SPI));
   if (SD.cardType() == CARD_NONE) {
-    eventLog.println(F("No SD card attached"));
+    eventLog.println("No SD card attached");
   }
   uint32_t cardSize = SD.cardSize() / (1024 * 1024);
-  eventLog << F("SDCard Size: ") << cardSize << F("MB") << endl;
+  eventLog << "SDCard Size: " << cardSize << "MB" << endl;
 
   // Init nextLogTime
   bootTime = rtc.now();
   logfile.open();
-  logfile << bootTime << F(": system booted - ")
+  logfile << bootTime << ": system booted - "
     << (rtc.lostPower()
-        ? F("RTC power loss")
-        : F("RTC remained powered"))
+        ? "RTC power loss"
+        : "RTC remained powered")
     << endl;
   nextLogTime = bootTime;
 
@@ -166,12 +166,12 @@ void setup()
   if (storedTime > bootTime - TimeSpan(1 /* days */) and
       storedTime < bootTime + pumpInterval)
   {
-    logfile << F("Using RTC pump timer: ") << storedTime << endl;
+    logfile << "Using RTC pump timer: " << storedTime << endl;
     nextPumpTime = storedTime;
   }
   else
   {
-    logfile << F("Reset RTC pump timer: ") << storedTime << endl;
+    logfile << "Reset RTC pump timer: " << storedTime << endl;
     nextPumpTime = bootTime + firstPumpDelay;
     writeNextPumpTime(nextPumpTime);
   }
@@ -423,20 +423,20 @@ bool updateDisplay()
       // show black screen
       break;
     case 1:
-      display << F("- Plant Water OS -") << endl;
+      display << "- Plant Water OS -" << endl;
       display << now << endl;
       break;
     case 2:
-      display << F("Soil moisture: ") << sensorValue << endl;
-      display << F("Temperature: ") << temperature << endl;
+      display << "Soil moisture: " << sensorValue << endl;
+      display << "Temperature: " << temperature << endl;
       break;
     case 3:
-      display << F("Next pouring: ") << (nextPumpTime - now) << endl;
-      display << F("Total pourings: ") << numPumpEvents << endl;
+      display << "Next pouring: " << (nextPumpTime - now) << endl;
+      display << "Total pourings: " << numPumpEvents << endl;
       break;
     case 4:
-      display << F("IP: ") << WiFi.localIP() << endl;
-      display << F("Uptime: ") << (now - bootTime) << endl;
+      display << "IP: " << WiFi.localIP() << endl;
+      display << "Uptime: " << (now - bootTime) << endl;
       break;
   }
   display.display();
@@ -509,7 +509,7 @@ void dispatchMessage(DeviceOperationMessage message)
 
       numPumpEvents += 1;
       logfile.open();
-      eventLog << now << F(": Pump event ") << numPumpEvents << F(" (") << pumpDuration << F("ms)") << endl;
+      eventLog << now << ": Pump event " << numPumpEvents << " (" << pumpDuration << "ms)" << endl;
 
       clearDisplayLines(4);
       display << "PUMPING...";

@@ -39,22 +39,22 @@ inline Print& operator<< (Print& out, DatePart date)
   return out
     << DoubleDigits{date.dt.year() / 100}
     << DoubleDigits{date.dt.year() % 100}
-    << F("-") << date.dt.month()
-    << F("-") << date.dt.day();
+    << '-' << date.dt.month()
+    << '-' << date.dt.day();
 }
 
 inline Print& operator<< (Print& out, TimePart time)
 {
   return out
-    << DoubleDigits{time.dt.hour()} << F(":")
-    << DoubleDigits{time.dt.minute()} << F(":")
+    << DoubleDigits{time.dt.hour()} << ':'
+    << DoubleDigits{time.dt.minute()} << ':'
     << DoubleDigits{time.dt.second()};
 }
 
 inline Print& operator<< (Print& out, DateTime datetime)
 {
   return out
-      << DatePart{datetime} << F(" ")
+      << DatePart{datetime} << ' '
       << TimePart{datetime};
 }
 
@@ -65,20 +65,20 @@ inline Print& operator<< (Print& out, TimeSpan timespan)
   int minutes = timespan.minutes();
 
   if (days > 0) {
-    return out << days << F("d ")
-               << hours << F("h");
+    return out << days << "d "
+               << hours << 'h';
   }
   if (hours > 0) {
-    out << hours << F("h ");
+    out << hours << "h ";
   }
-  return out << minutes << F("m");
+  return out << minutes << 'm';
 }
 
 inline Print& operator<< (Print& out, Temperature temperature)
 {
   return out
-      << (int)(temperature.degreeCelsius)           << F(".")
-      << (int)(temperature.degreeCelsius * 10) % 10 << F("C");
+      << (int)(temperature.degreeCelsius)           << '.'
+      << (int)(temperature.degreeCelsius * 10) % 10 << 'C';
 }
 
 inline Print& operator<< (Print& out, SensorRecord record)

@@ -20,8 +20,8 @@ public:
       file_.close();
       file_ = SD.open(filename_, FILE_APPEND, /* create */ true);
       print_.println(file_
-        ? F("Open logfile: SUCCESS!")
-        : F("Open logfile: FAILED!"));
+        ? "Open logfile: SUCCESS!"
+        : "Open logfile: FAILED!");
     }
     return file_;
   }
