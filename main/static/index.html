@@ -51,6 +51,29 @@ nav > div.active:hover {
 main {
 }
 
+span.spacer {
+  display: inline-block;
+  width: 1em;
+}
+
+fieldset {
+  padding: 0px 3px 3px 3px; /* t r b l */
+  margin-top: 5px;
+  margin-bottom: 10px;
+  border: none;
+  box-shadow: 0 0 10px #666;
+  border-radius: 10px;
+}
+fieldset > legend {
+  transform: translateY(-20%);
+  background-color: white;
+  font-size: 80%;
+  font-weight: bold;
+  width: auto;
+  margin-left: auto;
+  margin-right: auto;
+}
+
 dl {
   display: grid;
   grid: "name value";
@@ -60,9 +83,14 @@ dl > * {
   padding: 0.5ex 1em;
   margin: 0;
 }
+
+dl > *:nth-child(4n+1),
+dl > *:nth-child(4n+2) {
+  background-color: #eee;
+}
 dl > *:nth-child(4n+3),
 dl > *:nth-child(4n+4) {
-  background-color: #eee;
+  background-color: #fff;
 }
 
 dt::after {
@@ -439,31 +467,35 @@ app({
     ]), // </main>
 
     activeTab == "prefs" && h('main', {}, [
-      h("dl", {}, [
-        h("dt", {class: {modified: !hasDefaultValue({serverstatus, editstatus}, "pumpInterval")}}, text("Pump interval:")),
-        h("dd", {class: {modified: !hasDefaultValue({serverstatus, editstatus}, "pumpInterval")}}, [
-          h("input", {
-            type: "number",
-            value: (editstatus.pumpInterval ?? serverstatus.pumpInterval) / (24 * 3600),
-            min: "1",
-            max: "99",
-            oninput: EditNumber('pumpInterval', 24 * 3600),
-          }),
-          h("span", {}, text(" days")),
-        ]),
 
-        h("dt", {class: {modified: !hasDefaultValue({serverstatus, editstatus}, "pumpDuration")}}, text("Pump duration:")),
-        h("dd", {class: {modified: !hasDefaultValue({serverstatus, editstatus}, "pumpDuration")}}, [
-          h("input", {
-            type: "number",
-            value: editstatus.pumpDuration ?? serverstatus.pumpDuration,
-            min: "100",
-            max: "9999",
-            oninput: EditNumber('pumpDuration'),
-          }),
-          h("span", {}, text(" ms")),
-        ]),
-      ]), // </dl>
+      h("fieldset", {}, [
+        h("legend", {}, text("Pump settings")),
+        h("dl", {}, [
+          h("dt", {class: {modified: !hasDefaultValue({serverstatus, editstatus}, "pumpInterval")}}, text("Pump interval:")),
+          h("dd", {class: {modified: !hasDefaultValue({serverstatus, editstatus}, "pumpInterval")}}, [
+            h("input", {
+              type: "number",
+              value: (editstatus.pumpInterval ?? serverstatus.pumpInterval) / (24 * 3600),
+              min: "1",
+              max: "99",
+              oninput: EditNumber('pumpInterval', 24 * 3600),
+            }),
+            h("span", {}, text(" days")),
+          ]),
+
+          h("dt", {class: {modified: !hasDefaultValue({serverstatus, editstatus}, "pumpDuration")}}, text("Pump duration:")),
+          h("dd", {class: {modified: !hasDefaultValue({serverstatus, editstatus}, "pumpDuration")}}, [
+            h("input", {
+              type: "number",
+              value: editstatus.pumpDuration ?? serverstatus.pumpDuration,
+              min: "100",
+              max: "9999",
+              oninput: EditNumber('pumpDuration'),
+            }),
+            h("span", {}, text(" ms")),
+          ]),
+        ]), // </dl>
+      ]),
 
       h("div", {class: "actions"}, [
         h("button", {onclick: PrefsSave, disabled: disableInputs}, text("Save")),
