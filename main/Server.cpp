@@ -3,6 +3,7 @@
 #include "Formatting.hpp"
 #include "Json.hpp"
 #include "PlantWaterOS.hpp"
+#include "Wifi.hpp"
 
 #include <WebServer.h>
 #include <Stream.h>
@@ -166,5 +167,36 @@ void onHttpApiPrefsPost()
     setPumpInterval(prefs, pumpInterval);
   }
 
+  // WiFi settings
+  String wifi_mode = server.arg("wifiMode");
+  String wifi_ssid = server.arg("wifiSsid");
+  String wifi_password = server.arg("wifiPassword");
+  String wifi_hostname = server.arg("wifiHostname");
+
+  WiFiMode_t mode = WIFI_MODE_NULL;
+  if (wifi_mode == "STA") {
+    mode = WIFI_MODE_STA;
+  }
+  else if (wifi_mode == "AP") {
+    mode = WIFI_MODE_AP;
+  }
+
+  bool restart_wifi = false;
+
+  if (mode != WIFI_MODE_NULL and wifi_ssid.length() > 0 and wifi_password.length() > 0) {
+    setWifiNetwork(prefs, mode, wifi_ssid, wifi_password);
+    restart_wifi = true;
+  }
+  if (wifi_hostname.length() > 0) {
+    setWifiHostname(prefs, wifi_hostname);
+    restart_wifi = true;
+  }
+
+  // Send status update before disconnecting WiFi
   onHttpApiStatus();
+
+  if (restart_wifi) {
+    stopWifi();
+    initWifi();
+  }
 }

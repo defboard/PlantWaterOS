@@ -176,9 +176,6 @@ void setup()
     writeNextPumpTime(nextPumpTime);
   }
 
-  initWifi();
-  initWebServer();
-
   {
     Preferences prefs;
     bool open = prefs.begin(PREFS_NAMESPACE, /* readOnly */ true);
@@ -186,8 +183,12 @@ void setup()
     if (open) {
       pumpDuration = prefs.getInt("pump-duration", pumpDuration);
       pumpInterval = TimeSpan(prefs.getLong("pump-interval", pumpInterval.totalseconds()));
+      loadWifiSettings(prefs);
     }
   }
+
+  initWifi();
+  initWebServer();
 
   pumpStopTimer = xTimerCreate(
       "pumpStop", pdMS_TO_TICKS(pumpDuration),

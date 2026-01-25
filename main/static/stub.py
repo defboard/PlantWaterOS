@@ -19,7 +19,9 @@ state.prevPumpTime = datetime(2000, 1, 1, 0, 0, 0)
 state.nextPumpTime = state.prevPumpTime + state.pumpInterval
 state.numPumpEvents = 0
 state.sensorData = example['sensorData'][:]
-
+state.wifiMode = "STA"
+state.wifiSsid = "PlantWaterNet"
+state.wifiPassword = ""
 
 logfile = StringIO()
 
@@ -82,6 +84,8 @@ def server_info():
         "sensorValue": random.randint(800, 1200),
         "temperature": random.uniform(19, 21),
         "sensorData": state.sensorData,
+        "wifiMode": state.wifiMode,
+        "wifiSsid": state.wifiSsid,
     }
 
 
@@ -120,10 +124,27 @@ def prefs():
     pumpInterval = data.get("pumpInterval")
     if pumpInterval is not None:
         state.pumpInterval = timedelta(0, int(pumpInterval))
+        log("pumpInterval =", pumpInterval)
 
     pumpDuration = data.get("pumpDuration")
     if pumpDuration is not None:
         state.pumpDuration = int(pumpDuration)
+        log("pumpDuration =", pumpDuration)
+
+    wifiMode = data.get("wifiMode")
+    if wifiMode:
+        state.wifiMode = wifiMode
+        log("wifiMode =", wifiMode)
+
+    wifiSsid = data.get("wifiSsid")
+    if wifiSsid:
+        state.wifiSsid = wifiSsid
+        log("wifiSsid =", wifiSsid)
+
+    wifiPassword = data.get("wifiPassword")
+    if wifiPassword:
+        state.wifiPassword = wifiPassword
+        log("wifiPassword =", wifiPassword)
 
     return server_info()
 

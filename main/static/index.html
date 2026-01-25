@@ -160,7 +160,7 @@ import { h, text, app } from "./hyperapp.js"
 
 // Local storage
 
-const storageKey = 'WaterPlantOS';
+const storageKey = 'PlantWaterOS';
 const savedState = JSON.parse(localStorage.getItem(storageKey) || "{}");
 const initialState = {
   serverstatus: {
@@ -175,6 +175,9 @@ const initialState = {
     sensorValue: "",
     temperature: "",
     sensorData: [],
+    wifiMode: "STA",
+    wifiSsid: "PlantWaterNet",
+    wifiPassword: "",
   },
   // client
   activeTab: "status",
@@ -254,7 +257,13 @@ const hasDefaultValue = (state, key) => (
 );
 
 const PrefsSave = (state, event) => ([
-  DisableInputs(state),
+  DisableInputs({
+    ...state,
+    editstatus: {
+      ...state.editstatus,
+      wifiPassword: "",
+    },
+  }),
   [postRequest, ["prefs", state.editstatus, GotServerStatus]],
 ]);
 
@@ -267,6 +276,15 @@ const EditNumber = (key, multiplier) => (state, event) =>  storeLocal({
     [key]: event.target.value * (multiplier ?? 1),
   },
 });
+
+const EditText = (key) => (state, event) => storeLocal({
+  ...state,
+  editstatus: {
+    ...state.editstatus,
+    [key]: event.target.value,
+  },
+});
+
 
 // plotting
 
@@ -493,6 +511,55 @@ app({
               oninput: EditNumber('pumpDuration'),
             }),
             h("span", {}, text(" ms")),
+          ]),
+        ]), // </dl>
+      ]),
+
+      h("fieldset", {}, [
+        h("legend", {}, text("WiFi settings")),
+        h("dl", {}, [
+          h("dt", {class: {modified: !hasDefaultValue({serverstatus, editstatus}, "wifiMode")}}, text("Connection mode:")),
+          h("dd", {class: {modified: !hasDefaultValue({serverstatus, editstatus}, "wifiMode")}}, [
+            h("input", {
+              type: "radio",
+              name: "wifiMode",
+              id: "wifiSTA",
+              value: "STA",
+              checked: (editstatus.wifiMode ?? serverstatus.wifiMode) == "STA" && "checked",
+              oninput: EditText('wifiMode'),
+            }),
+            h("label", {for: "wifiSTA"}, text("Client ")),
+
+            h("span", {class: "spacer"}, []),
+
+            h("input", {
+              type: "radio",
+              name: "wifiMode",
+              id: "wifiAP",
+              value: "AP",
+              checked: (editstatus.wifiMode ?? serverstatus.wifiMode) == "AP" && "checked",
+              oninput: EditText('wifiMode'),
+            }),
+            h("label", {for: "wifiAP"}, text("Hotspot")),
+          ]),
+
+          h("dt", {class: {modified: !hasDefaultValue({serverstatus, editstatus}, "wifiSsid")}}, text("SSID/name:")),
+          h("dd", {class: {modified: !hasDefaultValue({serverstatus, editstatus}, "wifiSsid")}}, [
+            h("input", {
+              type: "text",
+              value: editstatus.wifiSsid ?? serverstatus.wifiSsid,
+              oninput: EditText('wifiSsid'),
+            }),
+          ]),
+
+          h("dt", {class: {modified: !hasDefaultValue({serverstatus, editstatus}, "wifiPassword")}}, text("Password:")),
+          h("dd", {class: {modified: !hasDefaultValue({serverstatus, editstatus}, "wifiPassword")}}, [
+            h("input", {
+              type: "password",
+              value: editstatus.wifiPassword ?? "",
+              placeholder: "**************",
+              oninput: EditText('wifiPassword'),
+            }),
           ]),
         ]), // </dl>
       ]),
