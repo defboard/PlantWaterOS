@@ -7,10 +7,6 @@
 
 using StreamFormatter = void(Print&);
 
-struct DoubleDigits {
-  int number;
-};
-
 struct DatePart { DateTime dt; };
 struct TimePart { DateTime dt; };
 
@@ -20,6 +16,11 @@ inline void endl(Print& out) {
   out.flush();
 }
 
+inline char digit(int number)
+{
+  return '0' + (number % 10);
+}
+
 template <class T>
 inline Print& operator<< (Print& out, T value)
 {
@@ -27,28 +28,32 @@ inline Print& operator<< (Print& out, T value)
   return out;
 }
 
-inline Print& operator<< (Print& out, DoubleDigits num)
-{
-  return out
-      << (num.number / 10)
-      << (num.number % 10);
-}
-
 inline Print& operator<< (Print& out, DatePart date)
 {
   return out
-    << DoubleDigits{date.dt.year() / 100}
-    << DoubleDigits{date.dt.year() % 100}
-    << '-' << date.dt.month()
-    << '-' << date.dt.day();
+    << date.dt.year() / 1000
+    << digit(date.dt.year() / 100)
+    << digit(date.dt.year() / 10)
+    << digit(date.dt.year())
+    << '-'
+    << digit(date.dt.month() / 10)
+    << digit(date.dt.month())
+    << '-'
+    << digit(date.dt.day() / 10);
+    << digit(date.dt.day());
 }
 
 inline Print& operator<< (Print& out, TimePart time)
 {
   return out
-    << DoubleDigits{time.dt.hour()} << ':'
-    << DoubleDigits{time.dt.minute()} << ':'
-    << DoubleDigits{time.dt.second()};
+    << digit(time.dt.hour() / 10)
+    << digit(time.dt.hour())
+    << ':'
+    << digit(time.dt.minute() / 10)
+    << digit(time.dt.minute())
+    << ':'
+    << digit(time.dt.second() / 10)
+    << digit(time.dt.second());
 }
 
 inline Print& operator<< (Print& out, DateTime datetime)
