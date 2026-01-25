@@ -1,6 +1,7 @@
 #pragma once
 #include "RingBuffer.hpp"
 
+#include <Preferences.h>
 #include <StreamString.h>
 #include <RTClib.h>
 
@@ -54,7 +55,7 @@ bool sendMessage(
 
 
 extern int getPumpDuration();
-extern bool setPumpDuration(int duration);
+extern bool setPumpDuration(Preferences& prefs, int duration);
 
 extern int32_t getPumpInterval();
-extern bool setPumpInterval(int32_t interval);
+extern bool setPumpInterval(Preferences& prefs, int32_t interval);

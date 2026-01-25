@@ -152,14 +152,18 @@ void onHttpApiPumpReset()
 
 void onHttpApiPrefsPost()
 {
+  Preferences prefs;
+  prefs.begin(PREFS_NAMESPACE, /* readOnly */ false);
+
+  // Pump settings
   if (server.hasArg("pumpDuration")) {
     int pumpDuration = server.arg("pumpDuration").toInt();
-    setPumpDuration(pumpDuration);
+    setPumpDuration(prefs, pumpDuration);
   }
 
   if (server.hasArg("pumpInterval")) {
     int32_t pumpInterval = server.arg("pumpInterval").toInt();
-    setPumpInterval(pumpInterval);
+    setPumpInterval(prefs, pumpInterval);
   }
 
   onHttpApiStatus();

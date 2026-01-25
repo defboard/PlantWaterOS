@@ -559,7 +559,7 @@ int getPumpDuration()
   return pumpDuration;
 }
 
-bool setPumpDuration(int duration)
+bool setPumpDuration(Preferences& prefs, int duration)
 {
   if (duration < 100 or duration > 10 * 1000) {
     return false;
@@ -572,16 +572,7 @@ bool setPumpDuration(int duration)
       pdMS_TO_TICKS(duration),
       /* blockTime */ 0);
 
-  {
-    Preferences prefs;
-    if (not prefs.begin(PREFS_NAMESPACE, /* readOnly */ false)) {
-      return false;
-    }
-    if (not prefs.putInt("pump-duration", duration)) {
-      return false;
-    }
-  }
-  return true;
+  return prefs.putInt("pump-duration", duration);
 }
 
 int32_t getPumpInterval()
@@ -589,7 +580,7 @@ int32_t getPumpInterval()
   return pumpInterval.totalseconds();
 }
 
-bool setPumpInterval(int32_t seconds)
+bool setPumpInterval(Preferences& prefs, int32_t seconds)
 {
   if (seconds < 6 * 3600) {
     return false;
@@ -597,17 +588,7 @@ bool setPumpInterval(int32_t seconds)
 
   pumpInterval = TimeSpan(seconds);
 
-  {
-    Preferences prefs;
-    if (not prefs.begin(PREFS_NAMESPACE, /* readOnly */ false)) {
-      return false;
-    }
-    if (not prefs.putLong("pump-interval", seconds)) {
-      return false;
-    }
-  }
-
-  return true;
+  return prefs.putLong("pump-interval", seconds);
 }
 
 // vim: sw=2 ts=2 sts=2
