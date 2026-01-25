@@ -176,6 +176,7 @@ void setup()
     writeNextPumpTime(nextPumpTime);
   }
 
+  if (digitalRead(BTN_RCV_PIN) == HIGH)
   {
     Preferences prefs;
     bool open = prefs.begin(PREFS_NAMESPACE, /* readOnly */ true);
