@@ -33,10 +33,6 @@ const int PIN_SD_CS         = 21;
 const int PIN_SENSOR        = 35;
 const int PIN_ENABLE_PUMP   = 4;
 
-const int PIN_STICK_BTN     = 25;
-const int PIN_STICK_X       = 36;
-const int PIN_STICK_Y       = 39;
-
 const int BTN_RCV_PIN       = 23;
 
 
@@ -86,7 +82,6 @@ Temperature temperature;
 RingBuffer<SensorRecord, 1000> sensorRecords;
 
 Button mainButton(BTN_RCV_PIN);
-Button stickButton(PIN_STICK_BTN);
 
 QueueHandle_t opMessageQueue = NULL;
 TickType_t loopLastWakeTime = 0;
@@ -98,7 +93,6 @@ extern TaskHandle_t loopTaskHandle;
 
 // Forward declarations
 bool handleButton(ButtonEvent event);
-void handleJoystick();
 void readSensor();
 void enablePump(bool enable);
 DateTime readNextPumpTime();
@@ -122,9 +116,6 @@ void setup()
   // Init control pins
   pinMode(PIN_ENABLE_PUMP, OUTPUT);
   enablePump(false);
-  pinMode(PIN_STICK_X, INPUT);
-  pinMode(PIN_STICK_Y, INPUT);
-  pinMode(PIN_STICK_BTN, INPUT_PULLUP);
   pinMode(BTN_RCV_PIN, INPUT_PULLUP);
   // mainButton.begin();
 
@@ -221,12 +212,8 @@ void loop()
   }
 
   ButtonEvent btn1 = mainButton.getEvent();
-  ButtonEvent btn2 = stickButton.getEvent();
 
-  bool buttonIsPressed = handleButton(btn1) or handleButton(btn2);
-  if (not buttonIsPressed) {
-    handleJoystick();
-  }
+  bool buttonIsPressed = handleButton(btn1);
 
   if (counter % 100 == 0) {
     counter = 0;
@@ -295,63 +282,6 @@ bool handleButton(ButtonEvent event)
   return false;
 }
 
-
-int old_xdir = 0;
-int old_ydir = 0;
-TickType_t old_xtick = 0;
-TickType_t old_ytick = 0;
-
-
-int joystick_direction(int val) {
-  const int MID = 2048;
-  const int THRESH = MID / 2;
-  if (val < MID - THRESH) {
-    return -1;
-  }
-  if (val > MID + THRESH) {
-    return 1;
-  }
-  return 0;
-}
-
-void handleJoystick()
-{
-  const TickType_t tick = xTaskGetTickCount();
-  const TickType_t delta_xtick = tick - old_xtick;
-  const TickType_t delta_ytick = tick - old_ytick;
-
-  const int new_vx = analogRead(PIN_STICK_X);
-  const int new_vy = analogRead(PIN_STICK_Y);
-  const int new_xdir = -joystick_direction(new_vx);
-  const int new_ydir = joystick_direction(new_vy);
-
-  if (new_xdir == old_xdir) {
-    old_xtick = tick;
-  }
-  else if (delta_xtick > 50) {
-    old_xtick = tick;
-    old_xdir = new_xdir;
-
-    if (new_xdir == -1) {
-      sendMessage(MessageType::ScreenCyclePrev);
-    }
-    else if (new_xdir == 1) {
-      sendMessage(MessageType::ScreenCycleNext);
-    }
-  }
-
-  if (new_ydir == old_ydir) {
-    old_ytick = tick;
-  }
-  else if (delta_ytick > 50) {
-    old_ytick = tick;
-    old_ydir = new_ydir;
-
-    sendMessage(MessageType::ScreenInfoLine,
-        new_ydir < 0 ? "Up!" :
-        new_ydir > 0 ? "Down!" : "");
-  }
-}
 
 void enablePump(bool enable)
 {
