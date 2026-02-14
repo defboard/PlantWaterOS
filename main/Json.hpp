@@ -170,15 +170,15 @@ public:
     put_plain(value);
   }
 
-  template <class K, class V>
+  template <class K>
   inline void put_bool(const K& key, bool value)
   {
     put_key(key);
     put_bool(value);
   }
 
-  template <class K, class V>
-  inline void put_null(const K& key, bool value)
+  template <class K>
+  inline void put_null(const K& key)
   {
     put_key(key);
     put_null();

@@ -129,14 +129,14 @@ void setup()
   // mainButton.begin();
 
   // Init RTC
-  eventLog << "Init Wire: " << CheckSuccess(Wire.begin(PIN_RTC_SDA, PIN_RTC_SCL));
-  eventLog << "Init RTC: " << CheckSuccess(rtc.begin(&Wire));
+  eventLog << "Init Wire: " << CheckSuccess(Wire.begin(PIN_RTC_SDA, PIN_RTC_SCL)) << endl;
+  eventLog << "Init RTC: " << CheckSuccess(rtc.begin(&Wire)) << endl;
   rtc.disable32K();
   rtc.writeSqwPinMode(Ds3231SqwPinMode::DS3231_OFF);
 
   // Init SD
-  eventLog << "Init SPI: " << CheckSuccess(SPI.begin(PIN_SD_SCLK, PIN_SD_MISO, PIN_SD_MOSI, PIN_SD_CS));
-  eventLog << "Init SD: " << CheckSuccess(SD.begin(PIN_SD_CS, SPI));
+  eventLog << "Init SPI: " << CheckSuccess(SPI.begin(PIN_SD_SCLK, PIN_SD_MISO, PIN_SD_MOSI, PIN_SD_CS)) << endl;
+  eventLog << "Init SD: " << CheckSuccess(SD.begin(PIN_SD_CS, SPI)) << endl;
   if (SD.cardType() == CARD_NONE) {
     eventLog.println("No SD card attached");
   }

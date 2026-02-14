@@ -39,7 +39,7 @@ inline Print& operator<< (Print& out, DatePart date)
     << digit(date.dt.month() / 10)
     << digit(date.dt.month())
     << '-'
-    << digit(date.dt.day() / 10);
+    << digit(date.dt.day() / 10)
     << digit(date.dt.day());
 }
 
@@ -97,7 +97,7 @@ inline Print& operator<< (Print& out, StreamFormatter f)
   return out;
 }
 
-const char* CheckSuccess(bool success)
+inline const char* CheckSuccess(bool success)
 {
   return success ? "SUCCESS!" : "FAILED!";
 }
