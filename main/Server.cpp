@@ -107,6 +107,8 @@ void onHttpApiStatus()
   json.put_string("serverTime", now);
   json.put_string("bootTime", bootTime);
   json.put_string("localIP", WiFi.localIP());
+  json.put_string("wifiMode", WIFI_MODE == WIFI_AP ? "AP" : "STA");
+  json.put_string("wifiSsid", WIFI_SSID);
   json.put_string("prevPumpTime", prevPumpTime);
   json.put_string("nextPumpTime", nextPumpTime);
   json.put_string("pumpInterval", getPumpInterval());
