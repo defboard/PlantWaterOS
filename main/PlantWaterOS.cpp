@@ -112,6 +112,7 @@ void writeNextPumpTime(const DateTime& nextPumpTime);
 void clearDisplayLines(int firstLine, int num=1);
 void opMessageTask(void*);
 void onPumpStopTimer(TimerHandle_t);
+void _setSystemTime();
 
 
 // Implementation
@@ -531,6 +532,9 @@ void dispatchMessage(DeviceOperationMessage message)
       readSensor();
       break;
 
+    case MessageType::SetSystemTime:
+      _setSystemTime();
+      break;
   };
 }
 
@@ -586,6 +590,34 @@ bool setPumpInterval(Preferences& prefs, int32_t seconds)
   pumpInterval = TimeSpan(seconds);
 
   return prefs.putLong("pump-interval", seconds);
+}
+
+DateTime _newSystemTime;
+
+bool setSystemTime(DateTime systemTime)
+{
+  if (systemTime.isValid()) {
+    _newSystemTime = systemTime;
+    sendMessage(MessageType::SetSystemTime, nullptr, portMAX_DELAY);
+    return true;
+  }
+  return false;
+}
+
+void _setSystemTime()
+{
+  now = rtc.now();
+
+  const TimeSpan delta = _newSystemTime - now;
+
+  now = now + delta;
+  bootTime = bootTime + delta;
+  nextLogTime = nextLogTime + delta;
+  prevPumpTime = prevPumpTime + delta;
+  nextPumpTime = nextPumpTime + delta;
+
+  rtc.adjust(now);
+  writeNextPumpTime(nextPumpTime);
 }
 
 // vim: sw=2 ts=2 sts=2

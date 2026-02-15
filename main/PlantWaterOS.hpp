@@ -24,6 +24,7 @@ enum class MessageType {
   PumpStop,
   PumpTimerReset,
   SensorRead,
+  SetSystemTime,
 };
 
 
@@ -61,3 +62,5 @@ extern bool setPumpDuration(Preferences& prefs, int duration);
 
 extern int32_t getPumpInterval();
 extern bool setPumpInterval(Preferences& prefs, int32_t interval);
+
+extern bool setSystemTime(DateTime systemTime);

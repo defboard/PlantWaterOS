@@ -146,6 +146,10 @@ def prefs():
         state.wifiPassword = wifiPassword
         log("wifiPassword =", wifiPassword)
 
+    updateServerTime = data.get("updateServerTime")
+    if updateServerTime:
+        log("serverTime =", data.get("clientTime"))
+
     return server_info()
 
 

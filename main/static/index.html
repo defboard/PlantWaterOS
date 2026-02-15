@@ -178,6 +178,7 @@ const initialState = {
     wifiMode: "STA",
     wifiSsid: "PlantWaterNet",
     wifiPassword: "",
+    updateServerTime: 0,
   },
   // client
   activeTab: "status",
@@ -194,6 +195,23 @@ const storeLocal = (state) => {
   return state;
 };
 
+/*
+ * Format local time in ISO 8601 format.
+ *
+ * Can not use d.getISOString() because it returns the time in UTC.
+*/
+const formatDateTime = (d) => {
+  const pad = (num, places) => num.toString().padStart(places, '0');
+  const year = pad(d.getFullYear(), 4);
+  const month = pad(d.getMonth() + 1, 2);
+  const day = pad(d.getDate(), 2);
+  const hours = pad(d.getHours(), 2);
+  const minutes = pad(d.getMinutes(), 2);
+  const seconds = pad(d.getSeconds(), 2);
+  const millis = pad(d.getMilliseconds(), 3);
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}.${millis}Z`;
+};
+
 
 // Effects
 
@@ -206,7 +224,10 @@ const fetchJson = (dispatch, [url, action]) => {
 const postRequest = (dispatch, [url, data, action]) => {
   fetch(url, {
     method: "POST",
-    body: new URLSearchParams(data),
+    body: new URLSearchParams({
+      ...data,
+      clientTime: formatDateTime(new Date()),   // ISO 8601
+    }),
   })
   .then(response => response.json())
   .then(data => dispatch(action, data))
@@ -262,6 +283,7 @@ const PrefsSave = (state, event) => ([
     editstatus: {
       ...state.editstatus,
       wifiPassword: "",
+      updateServerTime: 0,
     },
   }),
   [postRequest, ["prefs", state.editstatus, GotServerStatus]],
@@ -282,6 +304,14 @@ const EditText = (key) => (state, event) => storeLocal({
   editstatus: {
     ...state.editstatus,
     [key]: event.target.value,
+  },
+});
+
+const ToggleCheckBox = (key) => (state, event) =>  storeLocal({
+  ...state,
+  editstatus: {
+    ...state.editstatus,
+    [key]: state.editstatus[key] ? 0 : 1,
   },
 });
 
@@ -485,6 +515,24 @@ app({
     ]), // </main>
 
     activeTab == "prefs" && h('main', {}, [
+
+      h("fieldset", {}, [
+        h("legend", {}, text("System settings")),
+        h("dl", {}, [
+          h("dt", {class: {modified: editstatus.updateServerTime}}, text("Server time")),
+          h("dd", {class: {modified: editstatus.updateServerTime}}, [
+            h("input", {
+              type: "checkbox",
+              checked: editstatus.updateServerTime,
+              name: "updateServerTime",
+              id: "updateServerTime",
+              value: "1",
+              oninput: ToggleCheckBox("updateServerTime"),
+            }),
+            h("label", {for: "updateServerTime"}, text("update")),
+          ]),
+        ]), // </dl>
+      ]),
 
       h("fieldset", {}, [
         h("legend", {}, text("Pump settings")),

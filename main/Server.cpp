@@ -158,6 +158,16 @@ void onHttpApiPrefsPost()
   Preferences prefs;
   prefs.begin(PREFS_NAMESPACE, /* readOnly */ false);
 
+  // System settings
+  if (server.hasArg("updateServerTime") and
+      server.hasArg("clientTime"))
+  {
+    if (server.arg("updateServerTime").toInt() == 1) {
+      String clientTime = server.arg("clientTime");
+      setSystemTime(clientTime.c_str());            // ISO 8601 format
+    }
+  }
+
   // Pump settings
   if (server.hasArg("pumpDuration")) {
     int pumpDuration = server.arg("pumpDuration").toInt();
