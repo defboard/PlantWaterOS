@@ -33,8 +33,9 @@ const int PIN_SD_CS         = 22;
 const int PIN_SENSOR        = 35;
 const int PIN_ENABLE_PUMP   = 27;
 
-const int BTN_RCV_PIN       = 12;
-
+const int PIN_BTN_LEFT      = 13;
+const int PIN_BTN_MIDDLE    = 12;
+const int PIN_BTN_RIGHT     = 14;
 
 // Configuration
 const int SERIAL_BAUD_RATE = 9600;
@@ -54,10 +55,19 @@ const int LINE_HEIGHT       = 16;   // 8 * textHeight
 const int DISPLAY_RESET_PIN = -1;   // Reset pin # (or -1 if sharing Arduino reset pin)
 const int DISPLAY_ADDRESS   = 0x3C; // I2C address
 
+const long MIN_BUTTON_HOLD_TIME = 30;   // [ms]
+
 
 struct DeviceOperationMessage {
   MessageType type;
   const void* data;
+};
+
+enum ActionType
+{
+  Cancel = 0,
+  ResetTimer = 1,
+  PumpNow = 2
 };
 
 
@@ -81,7 +91,9 @@ int sensorValue = 0;
 Temperature temperature;
 RingBuffer<SensorRecord, 1000> sensorRecords;
 
-Button mainButton(BTN_RCV_PIN);
+Button buttonLeft(PIN_BTN_LEFT);
+Button buttonMiddle(PIN_BTN_MIDDLE);
+Button buttonRight(PIN_BTN_RIGHT);
 
 QueueHandle_t opMessageQueue = NULL;
 TickType_t loopLastWakeTime = 0;
@@ -92,7 +104,7 @@ extern TaskHandle_t loopTaskHandle;
 
 
 // Forward declarations
-bool handleButton(ButtonEvent event);
+bool handleButtons();
 void readSensor();
 void enablePump(bool enable);
 DateTime readNextPumpTime();
@@ -116,8 +128,10 @@ void setup()
   // Init control pins
   pinMode(PIN_ENABLE_PUMP, OUTPUT);
   enablePump(false);
-  pinMode(BTN_RCV_PIN, INPUT_PULLUP);
-  // mainButton.begin();
+  pinMode(PIN_BTN_LEFT, INPUT_PULLUP);
+  pinMode(PIN_BTN_MIDDLE, INPUT_PULLUP);
+  pinMode(PIN_BTN_RIGHT, INPUT_PULLUP);
+  // buttonMiddle.begin();
 
   // Init RTC
   eventLog << "Init Wire: " << CheckSuccess(Wire.begin(PIN_RTC_SDA, PIN_RTC_SCL)) << endl;
@@ -167,7 +181,7 @@ void setup()
     writeNextPumpTime(nextPumpTime);
   }
 
-  if (digitalRead(BTN_RCV_PIN) == HIGH)
+  if (digitalRead(PIN_BTN_MIDDLE) == HIGH)
   {
     Preferences prefs;
     bool open = prefs.begin(PREFS_NAMESPACE, /* readOnly */ true);
@@ -199,6 +213,10 @@ void setup()
 int counter = 0;
 int screen = 0;
 int num_screens = 5;
+int actionScreen = 0;
+int numActionScreens = 3;
+bool isActionScreenActive = false;
+
 int curSensorRepeat = numSensorRepeat;
 
 bool pumpIsStarted = false;
@@ -211,16 +229,14 @@ void loop()
     sendMessage(MessageType::PumpStop, nullptr, portMAX_DELAY);
   }
 
-  ButtonEvent btn1 = mainButton.getEvent();
-
-  bool buttonIsPressed = handleButton(btn1);
+  bool anyButtonIsPressed = handleButtons();
 
   if (counter % 100 == 0) {
     counter = 0;
     sendMessage(MessageType::SensorRead);
     sendMessage(MessageType::ScreenRefresh);
 
-    if (not buttonIsPressed) {
+    if (not anyButtonIsPressed) {
       if (now >= nextPumpTime) {
         sendMessage(MessageType::PumpStart);
       }
@@ -231,55 +247,94 @@ void loop()
 }
 
 
-bool handleButton(ButtonEvent event)
+void updateActionInfoLine()
 {
-  if (event.type == ButtonEvent::Down) {
-    if (event.millis > 9000)
-    {
-      if (event.prevMillis <= 9000) {
-        sendMessage(MessageType::ScreenInfoLine, "It's over 9000!");
-      }
+  if (isActionScreenActive) {
+    switch (actionScreen) {
+      case ActionType::Cancel:
+        sendMessage(MessageType::ScreenInfoLine, "[OK]: Cancel");
+        break;
+      case ActionType::ResetTimer:
+        sendMessage(MessageType::ScreenInfoLine, "[OK]: Reset timer");
+        break;
+      case ActionType::PumpNow:
+        sendMessage(MessageType::ScreenInfoLine, "[OK]: Pump now!");
+        break;
     }
-    else if (event.millis > 6000)
-    {
-      if (event.prevMillis <= 6000) {
-        sendMessage(MessageType::ScreenInfoLine, "Pump now!");
-      }
-    }
-    else if (event.millis > 3000)
-    {
-      if (event.prevMillis <= 3000) {
-        sendMessage(MessageType::ScreenInfoLine, "Reset pump timer");
-      }
-    }
-
-    return true;
   }
+}
 
-  else if (event.type == ButtonEvent::Release) {
-    sendMessage(MessageType::ScreenInfoLine, "");
-
-    if (event.millis > 9000)
-    {
-      // action cancelled; do nothing
-    }
-    else if (event.millis > 6000)
-    {
-      sendMessage(MessageType::PumpStart);
-    }
-    else if (event.millis > 3000)
-    {
+void executeSelectedAction()
+{
+  sendMessage(MessageType::ScreenInfoLine, "");
+  switch (actionScreen) {
+    case ActionType::Cancel:
+      break;
+    case ActionType::ResetTimer:
       sendMessage(MessageType::PumpTimerReset);
-    }
-    else if (event.millis > 30)
-    {
-      sendMessage(MessageType::ScreenCycleNext);
+      break;
+    case ActionType::PumpNow:
+      sendMessage(MessageType::PumpStart);
+      break;
+  }
+}
+
+
+bool handleButtons()
+{
+  bool anyButtonPressed = false;
+
+  {
+    const ButtonEvent btnL = buttonLeft.getEvent();
+    if (btnL.type == ButtonEvent::Release && btnL.millis > MIN_BUTTON_HOLD_TIME) {
+      if (isActionScreenActive) {
+        sendMessage(MessageType::ActionCyclePrev);
+      }
+      else {
+        sendMessage(MessageType::ScreenCyclePrev);
+      }
     }
 
-    return true;
+    if (btnL.type != ButtonEvent::Up) {
+      anyButtonPressed = true;
+    }
   }
 
-  return false;
+  {
+    const ButtonEvent btnR = buttonRight.getEvent();
+    if (btnR.type == ButtonEvent::Release && btnR.millis > MIN_BUTTON_HOLD_TIME) {
+      if (isActionScreenActive) {
+        sendMessage(MessageType::ActionCycleNext);
+      }
+      else {
+        sendMessage(MessageType::ScreenCycleNext);
+      }
+    }
+
+    if (btnR.type != ButtonEvent::Up) {
+      anyButtonPressed = true;
+    }
+  }
+
+  {
+    const ButtonEvent btnM = buttonMiddle.getEvent();
+    if (btnM.type == ButtonEvent::Release && btnM.millis > MIN_BUTTON_HOLD_TIME) {
+      if (isActionScreenActive) {
+        isActionScreenActive = false;
+        executeSelectedAction();
+      }
+      else {
+        isActionScreenActive = true;
+        updateActionInfoLine();
+      }
+    }
+
+    if (btnM.type != ButtonEvent::Up) {
+      anyButtonPressed = true;
+    }
+  }
+
+  return anyButtonPressed;
 }
 
 
@@ -419,6 +474,16 @@ void dispatchMessage(DeviceOperationMessage message)
       clearDisplayLines(4);
       display << ((const char*) message.data);
       display.display();
+      break;
+
+    case MessageType::ActionCyclePrev:
+      actionScreen = wrapRange(actionScreen - 1, 0,  numActionScreens - 1);
+      updateActionInfoLine();
+      break;
+
+    case MessageType::ActionCycleNext:
+      actionScreen = wrapRange(actionScreen + 1, 0,  numActionScreens - 1);
+      updateActionInfoLine();
       break;
 
     case MessageType::PumpStart:

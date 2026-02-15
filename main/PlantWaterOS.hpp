@@ -18,6 +18,8 @@ enum class MessageType {
   ScreenCycleNext,
   ScreenCyclePrev,
   ScreenInfoLine,
+  ActionCycleNext,
+  ActionCyclePrev,
   PumpStart,
   PumpStop,
   PumpTimerReset,
