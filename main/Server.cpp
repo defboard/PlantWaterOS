@@ -28,6 +28,7 @@ void onHttpFileEventsLog();
 void onHttpFileSensorLog();
 void onHttpApiStatus();
 void onHttpApiServerReboot();
+void onHttpApiServerTime();
 void onHttpApiPumpActivate();
 void onHttpApiPumpReset();
 void onHttpApiPrefsPost();
@@ -44,6 +45,7 @@ void initWebServer()
   server.on("/file/sensor.log", onHttpFileSensorLog);
   server.on("/api/status", onHttpApiStatus);
   server.on("/api/server/reboot", onHttpApiServerReboot);
+  server.on("/api/server/time", onHttpApiServerTime);
   server.on("/api/pump/activate", onHttpApiPumpActivate);
   server.on("/api/pump/reset", onHttpApiPumpReset);
   server.on("/prefs", HTTPMethod::HTTP_POST, onHttpApiPrefsPost);
@@ -139,6 +141,16 @@ void onHttpApiServerReboot()
   esp_restart();
 }
 
+void onHttpApiServerTime()
+{
+  if (server.hasArg("serverTime")) {
+    String serverTime = server.arg("serverTime");
+    setSystemTime(serverTime.c_str());            // ISO 8601 format
+    delay(100);
+  }
+  onHttpApiStatus();
+}
+
 void onHttpApiPumpActivate()
 {
   sendMessage(MessageType::PumpStart);
@@ -157,16 +169,6 @@ void onHttpApiPrefsPost()
 {
   Preferences prefs;
   prefs.begin(PREFS_NAMESPACE, /* readOnly */ false);
-
-  // System settings
-  if (server.hasArg("updateServerTime") and
-      server.hasArg("clientTime"))
-  {
-    if (server.arg("updateServerTime").toInt() == 1) {
-      String clientTime = server.arg("clientTime");
-      setSystemTime(clientTime.c_str());            // ISO 8601 format
-    }
-  }
 
   // Pump settings
   if (server.hasArg("pumpDuration")) {

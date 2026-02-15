@@ -100,6 +100,13 @@ def api_server_reboot():
     return {}
 
 
+@app.route("/api/server/time", methods=['POST'])
+def api_server_time():
+    data = request.form
+    log("serverTime =", data.get("serverTime"))
+    return server_info()
+
+
 @app.route("/api/pump/activate")
 def api_pump_activate():
     state.prevPumpTime = datetime.now()
@@ -145,10 +152,6 @@ def prefs():
     if wifiPassword:
         state.wifiPassword = wifiPassword
         log("wifiPassword =", wifiPassword)
-
-    updateServerTime = data.get("updateServerTime")
-    if updateServerTime:
-        log("serverTime =", data.get("clientTime"))
 
     return server_info()
 

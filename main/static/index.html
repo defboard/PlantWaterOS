@@ -93,6 +93,10 @@ dl > *:nth-child(4n+4) {
   background-color: #fff;
 }
 
+dd input[type="button"] {
+  width: 100%;
+}
+
 dt::after {
   content: " (*)";
   visibility: hidden;
@@ -201,9 +205,6 @@ const initialState = {
 updateRecursive(initialState, savedState);
 updateRecursive(initialState, {
   disableInputs: true,
-  editstatus: {
-    updateServerTime: 0,
-  },
 });
 
 const storeLocal = (state) => {
@@ -243,10 +244,7 @@ const fetchJson = (dispatch, [url, action]) => {
 const postRequest = (dispatch, [url, data, action]) => {
   fetch(url, {
     method: "POST",
-    body: new URLSearchParams({
-      ...data,
-      clientTime: formatDateTime(new Date()),   // ISO 8601
-    }),
+    body: new URLSearchParams(data),
   })
   .then(response => response.json())
   .then(data => dispatch(action, data))
@@ -290,6 +288,16 @@ const RebootServer = (state, event) => ([
   [fetchJson, ["api/server/reboot", GotServerStatus]],
 ]);
 
+const UpdateServerTime = (state, event) => {
+  const data = {
+    serverTime: formatDateTime(new Date()),   // ISO 8601
+  };
+  return [
+    DisableInputs(state),
+    [postRequest, ["api/server/time", data, GotServerStatus]],
+  ];
+};
+
 /* TODO */
 const isDefaultValue = (state, key, value) => (state.serverstatus[key] == value);
 const hasDefaultValue = (state, key) => (
@@ -302,7 +310,6 @@ const PrefsSave = (state, event) => ([
     editstatus: {
       ...state.editstatus,
       wifiPassword: "",
-      updateServerTime: 0,
     },
   }),
   [postRequest, ["prefs", state.editstatus, GotServerStatus]],
@@ -538,17 +545,17 @@ app({
       h("fieldset", {}, [
         h("legend", {}, text("System settings")),
         h("dl", {}, [
-          h("dt", {class: {modified: editstatus.updateServerTime}}, text("Server time")),
-          h("dd", {class: {modified: editstatus.updateServerTime}}, [
+          h("dt", {}, text("Server time")),
+          h("dd", {}, [
+            h("div", {}, text(serverstatus.serverTime)),
+          ]),
+          h("dt", {}, []),
+          h("dd", {}, [
             h("input", {
-              type: "checkbox",
-              checked: editstatus.updateServerTime,
-              name: "updateServerTime",
-              id: "updateServerTime",
-              value: "1",
-              oninput: ToggleCheckBox("updateServerTime"),
+              type: "button",
+              value: "Update",
+              onclick: UpdateServerTime,
             }),
-            h("label", {for: "updateServerTime"}, text("update")),
           ]),
         ]), // </dl>
       ]),
