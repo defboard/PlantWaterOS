@@ -158,6 +158,21 @@ dt.modified::after {
 import { h, text, app } from "./hyperapp.js"
 
 
+const updateRecursive = (a, b) => {
+  for (const key in b) {
+    if (typeof(a[key]) == "object" && !Array.isArray(a[key]) &&
+        typeof(b[key]) == "object" && !Array.isArray(b[key]))
+    {
+      updateRecursive(a[key], b[key]);
+    }
+    else {
+      a[key] = b[key];
+    }
+  }
+  return a;
+};
+
+
 // Local storage
 
 const storageKey = 'PlantWaterOS';
@@ -178,14 +193,18 @@ const initialState = {
     wifiMode: "STA",
     wifiSsid: "PlantWaterNet",
     wifiPassword: "",
-    updateServerTime: 0,
   },
   // client
   activeTab: "status",
   editstatus: {},
-  ...savedState,
-  disableInputs: true,
 };
+updateRecursive(initialState, savedState);
+updateRecursive(initialState, {
+  disableInputs: true,
+  editstatus: {
+    updateServerTime: 0,
+  },
+});
 
 const storeLocal = (state) => {
   localStorage.setItem(storageKey, JSON.stringify({
