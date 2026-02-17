@@ -325,6 +325,7 @@ bool handleButtons()
         executeSelectedAction();
       }
       else {
+        actionScreen = 0;
         isActionScreenActive = true;
         updateActionInfoLine();
       }
