@@ -255,11 +255,6 @@ const timeout = (dispatch, [delay, action]) => {
   setTimeout(() => dispatch(action), delay);
 };
 
-const every = (dispatch, [delay, action]) => {
-  const id = setInterval(() => { dispatch(action); }, delay);
-  return () => clearInterval(id);
-};
-
 
 // Events
 
@@ -299,11 +294,6 @@ const ResetPumpTime = (state, event) => ([
 const RebootServer = (state, event) => ([
   DisableInputs(state),
   [fetchJson, ["api/server/reboot", GotServerStatus]],
-]);
-
-const UpdateStatus = (state) => ([
-  state,
-  [fetchJson, ["api/status", GotServerStatus]],
 ]);
 
 const UpdateServerTime = (state, event) => {
@@ -498,10 +488,9 @@ const ShowGraph = ({sensorData}) => {
 
 
 app({
-  init: UpdateStatus(initialState),
-
-  subscriptions: (state) => [
-    [every, [1000, UpdateStatus]],
+  init: [
+    initialState,
+    [fetchJson, ["api/status", GotServerStatus]],
   ],
 
   view: ({serverstatus, activeTab, disableInputs, editstatus}) => h("div", {}, [
