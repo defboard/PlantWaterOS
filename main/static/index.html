@@ -266,7 +266,14 @@ const every = (dispatch, [delay, action]) => {
 const DISABLE_TIMEOUT = 750;
 
 const GotServerStatus = (state, serverstatus) => [
-  storeLocal({...state, serverstatus: {...state.serverstatus, ...serverstatus}}),
+  storeLocal({
+    ...state,
+    clientTime: new Date(),
+    serverstatus: {
+      ...state.serverstatus,
+      ...serverstatus,
+    },
+  }),
   [timeout, [DISABLE_TIMEOUT, EnableInputs]],
 ];
 
