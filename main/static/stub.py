@@ -22,6 +22,7 @@ state.sensorData = example['sensorData'][:]
 state.wifiMode = "STA"
 state.wifiSsid = "PlantWaterNet"
 state.wifiPassword = ""
+state.wifiHostname = "PlantWaterOS"
 
 logfile = StringIO()
 
@@ -86,6 +87,7 @@ def server_info():
         "sensorData": state.sensorData,
         "wifiMode": state.wifiMode,
         "wifiSsid": state.wifiSsid,
+        "wifiHostname": state.wifiHostname,
     }
 
 
@@ -152,6 +154,11 @@ def prefs():
     if wifiPassword:
         state.wifiPassword = wifiPassword
         log("wifiPassword =", wifiPassword)
+
+    wifiHostname = data.get("wifiHostname")
+    if wifiHostname:
+        state.wifiHostname = wifiHostname
+        log("wifiHostname =", wifiHostname)
 
     return server_info()
 

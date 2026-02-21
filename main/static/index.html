@@ -197,6 +197,7 @@ const initialState = {
     sensorData: [],
     wifiMode: "STA",
     wifiSsid: "PlantWaterNet",
+    wifiHostname: "PlantWaterOS",
     wifiPassword: "",
   },
   // client
@@ -694,6 +695,15 @@ app({
               value: editstatus.wifiPassword ?? "",
               placeholder: "**************",
               oninput: EditText('wifiPassword'),
+            }),
+          ]),
+
+          h("dt", {class: {modified: !hasDefaultValue({serverstatus, editstatus}, "wifiHostname")}}, text("Device hostname")),
+          h("dd", {class: {modified: !hasDefaultValue({serverstatus, editstatus}, "wifiHostname")}}, [
+            h("input", {
+              type: "text",
+              value: editstatus.wifiHostname ?? serverstatus.wifiHostname,
+              oninput: EditText('wifiHostname'),
             }),
           ]),
         ]), // </dl>
