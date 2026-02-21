@@ -19,6 +19,20 @@ String WIFI_PASSWORD = WIFI_DEFAULT_PASSWORD;
 String WIFI_HOSTNAME = WIFI_DEFAULT_HOSTNAME;
 
 
+namespace {
+  WiFiMode_t intToWifiMode(int value)
+  {
+    switch (value) {
+      case WIFI_STA:
+        return WIFI_STA;
+      case WIFI_AP:
+        return WIFI_AP;
+    }
+    return WIFI_OFF;
+  }
+}
+
+
 void onWifiGotIP(WiFiEvent_t event, WiFiEventInfo_t info)
 {
   Serial.print("Wifi connected: IP ");
@@ -40,41 +54,60 @@ void onWifiDisconnected(WiFiEvent_t event, WiFiEventInfo_t info)
 
 void stopWifi()
 {
-  WiFi.mode(WIFI_MODE_NULL);
+  WiFi.mode(WIFI_OFF);
 }
 
 
 void initWifi()
 {
+  if (WIFI_MODE == WIFI_OFF) {
+    Serial.print("WiFi disabled");
+    WiFi.mode(WIFI_OFF);
+    return;
+  }
   Serial.print("Connecting to WiFi: ");
   Serial.println(WIFI_SSID);
   WiFi.onEvent(onWifiGotIP, WiFiEvent_t::ARDUINO_EVENT_WIFI_STA_GOT_IP);
   WiFi.onEvent(onWifiDisconnected, WiFiEvent_t::ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
   WiFi.setHostname(WIFI_HOSTNAME.c_str());
   WiFi.mode(WIFI_MODE);
-  if (WIFI_MODE == WIFI_MODE_STA) {
-    WiFi.config(INADDR_NONE, INADDR_NONE, INADDR_NONE, INADDR_NONE);
-    WiFi.begin(WIFI_SSID.c_str(), WIFI_PASSWORD.c_str());
-  }
-  else {
-    WiFi.softAP(WIFI_SSID.c_str(), WIFI_PASSWORD.c_str());
+  switch (WIFI_MODE) {
+    case WIFI_STA:
+      WiFi.config(INADDR_NONE, INADDR_NONE, INADDR_NONE, INADDR_NONE);
+      WiFi.begin(WIFI_SSID.c_str(), WIFI_PASSWORD.c_str());
+      break;
+
+    case WIFI_AP:
+      WiFi.softAP(WIFI_SSID.c_str(), WIFI_PASSWORD.c_str());
+      break;
+
+    default:
+      break;
   }
 }
 
 
 void loadWifiSettings(Preferences& prefs)
 {
-  WIFI_MODE = prefs.getInt("wifi-mode", WIFI_MODE) == WIFI_STA ? WIFI_MODE_STA : WIFI_MODE_AP;
+  WIFI_MODE = intToWifiMode(prefs.getInt("wifi-mode", WIFI_MODE));
   WIFI_SSID = prefs.getString("wifi-ssid", WIFI_SSID);
   WIFI_PASSWORD = prefs.getString("wifi-password", WIFI_PASSWORD);
   WIFI_HOSTNAME = prefs.getString("wifi-hostname", WIFI_HOSTNAME);
 }
 
 
+bool disableWifi(Preferences& prefs)
+{
+  WIFI_MODE = WIFI_OFF;
+  bool success = prefs.putInt("wifi-mode", (int) WIFI_MODE);
+  return success;
+}
+
+
 bool setWifiNetwork(Preferences& prefs, WiFiMode_t mode, const String& ssid, const String& password)
 {
   // sanity checks
-  if (mode != WIFI_MODE_AP and mode != WIFI_MODE_STA) {
+  if (mode != WIFI_AP and mode != WIFI_STA) {
     return false;
   }
   if (ssid.length() < 1 or ssid.length() > 32) {

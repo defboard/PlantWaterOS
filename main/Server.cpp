@@ -11,6 +11,8 @@
 #include <SD.h>
 #include <Preferences.h>
 
+#include <optional>
+
 // Globals
 WebServer server(80);
 
@@ -33,6 +35,25 @@ void onHttpApiPumpActivate();
 void onHttpApiPumpReset();
 void onHttpApiPrefsPost();
 void sendFile(int code, const char* content_type, const uint8_t* start, const uint8_t* end);
+
+
+namespace {
+  std::optional<WiFiMode_t> strToWifiMode(const String& wifi_mode)
+  {
+    if (wifi_mode == "OFF") { return WIFI_OFF; }
+    if (wifi_mode == "STA") { return WIFI_STA; }
+    if (wifi_mode == "AP") { return WIFI_AP; }
+    return std::nullopt;
+  }
+
+  const char* dumpWifiMode(WiFiMode_t wifi_mode)
+  {
+    if (wifi_mode == WIFI_OFF) { return "OFF"; }
+    if (wifi_mode == WIFI_STA) { return "STA"; }
+    if (wifi_mode == WIFI_AP) { return "AP"; }
+    return "OFF";
+  }
+}
 
 
 // Implementation
@@ -109,7 +130,7 @@ void onHttpApiStatus()
   json.put_string("serverTime", now);
   json.put_string("bootTime", bootTime);
   json.put_string("localIP", WiFi.localIP());
-  json.put_string("wifiMode", WIFI_MODE == WIFI_AP ? "AP" : "STA");
+  json.put_string("wifiMode", dumpWifiMode(WIFI_MODE));
   json.put_string("wifiSsid", WIFI_SSID);
   json.put_string("wifiHostname", WIFI_HOSTNAME);
   json.put_string("prevPumpTime", prevPumpTime);
@@ -188,21 +209,19 @@ void onHttpApiPrefsPost()
   String wifi_password = server.arg("wifiPassword");
   String wifi_hostname = server.arg("wifiHostname");
 
-  WiFiMode_t mode = WIFI_MODE_NULL;
-  if (wifi_mode == "STA") {
-    mode = WIFI_MODE_STA;
-  }
-  else if (wifi_mode == "AP") {
-    mode = WIFI_MODE_AP;
-  }
+  std::optional<WiFiMode_t> mode = strToWifiMode(wifi_mode);
 
   bool restart_wifi = false;
 
-  if (mode != WIFI_MODE_NULL and wifi_ssid.length() > 0 and wifi_password.length() > 0) {
-    setWifiNetwork(prefs, mode, wifi_ssid, wifi_password);
+  if (mode == WIFI_OFF and WIFI_MODE != WIFI_OFF) {
+    disableWifi(prefs);
     restart_wifi = true;
   }
-  if (wifi_hostname.length() > 0) {
+  if (mode and mode != WIFI_OFF and wifi_ssid.length() > 0 and wifi_password.length() > 0) {
+    setWifiNetwork(prefs, *mode, wifi_ssid, wifi_password);
+    restart_wifi = true;
+  }
+  if (mode and mode != WIFI_OFF and wifi_hostname.length() > 0) {
     setWifiHostname(prefs, wifi_hostname);
     restart_wifi = true;
   }

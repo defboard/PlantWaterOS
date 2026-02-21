@@ -667,7 +667,6 @@ app({
             h("label", {for: "wifiSTA"}, text("Client ")),
 
             h("span", {class: "spacer"}, []),
-
             h("input", {
               type: "radio",
               name: "wifiMode",
@@ -677,6 +676,17 @@ app({
               oninput: EditText('wifiMode'),
             }),
             h("label", {for: "wifiAP"}, text("Hotspot")),
+
+            h("span", {class: "spacer"}, []),
+            h("input", {
+              type: "radio",
+              name: "wifiMode",
+              id: "wifiOFF",
+              value: "OFF",
+              checked: (editstatus.wifiMode ?? serverstatus.wifiMode) == "OFF" && "checked",
+              oninput: EditText('wifiMode'),
+            }),
+            h("label", {for: "wifiOFF"}, text("Off")),
           ]),
 
           h("dt", {class: {modified: !hasDefaultValue({serverstatus, editstatus}, "wifiSsid")}}, text("SSID/name:")),
@@ -685,6 +695,7 @@ app({
               type: "text",
               value: editstatus.wifiSsid ?? serverstatus.wifiSsid,
               oninput: EditText('wifiSsid'),
+              disabled: (editstatus.wifiMode ?? serverstatus.wifiMode) == "OFF",
             }),
           ]),
 
@@ -695,15 +706,18 @@ app({
               value: editstatus.wifiPassword ?? "",
               placeholder: "**************",
               oninput: EditText('wifiPassword'),
+              disabled: (editstatus.wifiMode ?? serverstatus.wifiMode) == "OFF",
             }),
           ]),
 
           h("dt", {class: {modified: !hasDefaultValue({serverstatus, editstatus}, "wifiHostname")}}, text("Device hostname")),
+
           h("dd", {class: {modified: !hasDefaultValue({serverstatus, editstatus}, "wifiHostname")}}, [
             h("input", {
               type: "text",
               value: editstatus.wifiHostname ?? serverstatus.wifiHostname,
               oninput: EditText('wifiHostname'),
+              disabled: (editstatus.wifiMode ?? serverstatus.wifiMode) == "OFF",
             }),
           ]),
         ]), // </dl>

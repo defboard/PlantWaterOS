@@ -11,5 +11,6 @@ void stopWifi();
 void initWifi();
 void loadWifiSettings(Preferences&);
 
+bool disableWifi(Preferences&);
 bool setWifiNetwork(Preferences&, WiFiMode_t mode, const String& ssid, const String& password);
 bool setWifiHostname(Preferences&, const String& hostname="");
