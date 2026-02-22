@@ -20,6 +20,9 @@
 #include <Adafruit_SSD1306.h>
 #include <RTClib.h>
 
+// stdlib
+#include <algorithm>
+
 
 // Pin assignments
 const int PIN_RTC_SDA       = 25;
@@ -90,6 +93,7 @@ int numPumpEvents = 0;
 int sensorValue = 0;
 Temperature temperature;
 RingBuffer<SensorRecord, 1000> sensorRecords;
+std::array<SensorRecord, numSensorRepeat> sensorReadingRepetitions;
 
 Button buttonLeft(PIN_BTN_LEFT);
 Button buttonMiddle(PIN_BTN_MIDDLE);
@@ -395,10 +399,19 @@ void readSensor()
   if (curSensorRepeat < numSensorRepeat) {
     logfile.open();
     logfile << now << ": " << curSensorRepeat << " " << temperature << " " << sensorValue << endl;
-    if (curSensorRepeat == numSensorRepeat/2) {
-      sensorRecords.push_back(SensorRecord{now.unixtime(), sensorValue});
-    }
+    sensorReadingRepetitions[curSensorRepeat] = SensorRecord { now.unixtime(), sensorValue };
     ++curSensorRepeat;
+
+    if (curSensorRepeat == numSensorRepeat) {
+      std::nth_element(
+          sensorReadingRepetitions.begin(),
+          sensorReadingRepetitions.begin() + numSensorRepeat / 2,
+          sensorReadingRepetitions.end(),
+          [](const SensorRecord& a, const SensorRecord& b) {
+            return a.value < b.value;
+          });
+      sensorRecords.push_back(sensorReadingRepetitions[numSensorRepeat / 2]);
+    }
   }
 }
 
