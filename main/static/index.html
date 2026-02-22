@@ -213,7 +213,7 @@ const storeLocal = (state) => {
     activeTab: state.activeTab,
     editstatus: state.editstatus,
   }));
-  return state;
+  return UpdateUI(state);
 };
 
 /*
@@ -221,16 +221,30 @@ const storeLocal = (state) => {
  *
  * Can not use d.getISOString() because it returns the time in UTC.
 */
-const formatDateTime = (d) => {
+const _localTime = (d) => {
   const pad = (num, places) => num.toString().padStart(places, '0');
-  const year = pad(d.getFullYear(), 4);
-  const month = pad(d.getMonth() + 1, 2);
-  const day = pad(d.getDate(), 2);
-  const hours = pad(d.getHours(), 2);
-  const minutes = pad(d.getMinutes(), 2);
-  const seconds = pad(d.getSeconds(), 2);
-  const millis = pad(d.getMilliseconds(), 3);
-  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}.${millis}Z`;
+  return {
+    yyyy: pad(d.getFullYear(), 4),
+    mm: pad(d.getMonth() + 1, 2),
+    dd: pad(d.getDate(), 2),
+    HH: pad(d.getHours(), 2),
+    MM: pad(d.getMinutes(), 2),
+    SS: pad(d.getSeconds(), 2),
+    fff: pad(d.getMilliseconds(), 3),
+  };
+};
+
+const formatDateTime_ISO8601 = (d) => {
+  const {yyyy, mm, dd, HH, MM, SS, fff} = _localTime(d);
+  return `${yyyy}-${mm}-${dd}T${HH}:${MM}:${SS}.${fff}Z`;
+};
+
+const formatDateTime_simple = (d) => {
+  if (!d) {
+    return "n/a";
+  }
+  const {yyyy, mm, dd, HH, MM, SS} = _localTime(d);
+  return `${yyyy}-${mm}-${dd} ${HH}:${MM}:${SS}`;
 };
 
 
@@ -255,25 +269,53 @@ const timeout = (dispatch, [delay, action]) => {
   setTimeout(() => dispatch(action), delay);
 };
 
+const every = (dispatch, [delay, action]) => {
+  const id = setInterval(() => { dispatch(action); }, delay);
+  return () => clearInterval(id);
+};
+
+const adjustTime = (time, delta) => {
+  if (time === undefined || delta === undefined || isNaN(delta)) {
+    return time;
+  }
+  return new Date(time.valueOf() + delta);
+};
+
 
 // Events
 
 const DISABLE_TIMEOUT = 750;
 
-const GotServerStatus = (state, serverstatus) => [
-  storeLocal({
-    ...state,
-    clientTime: new Date(),
-    serverstatus: {
-      ...state.serverstatus,
-      ...serverstatus,
-    },
-  }),
-  [timeout, [DISABLE_TIMEOUT, EnableInputs]],
-];
+const GotServerStatus = (state, serverstatus) => {
+  const serverTime = Date.parse(serverstatus.serverTime);
+  const requestTime = new Date();
+  const timeDelta = serverstatus.serverTime - requestTime;
+  return [
+    storeLocal({
+      ...state,
+      requestTime: requestTime,
+      timeDelta: timeDelta,
+      serverstatus: {
+        ...state.serverstatus,
+        ...serverstatus,
+      },
+    }),
+    [timeout, [DISABLE_TIMEOUT, EnableInputs]],
+  ];
+};
 
 
 // Actions
+
+const UpdateUI = (state) => {
+  const clientTime = new Date();
+  const displayedServerTime = adjustTime(clientTime, state.timeDelta);
+  return {
+    ...state,
+    clientTime,
+    displayedServerTime,
+  };
+}
 
 const EnableInputs = (state) => storeLocal({...state, disableInputs: false});
 const DisableInputs = (state) => storeLocal({...state, disableInputs: true});
@@ -298,7 +340,7 @@ const RebootServer = (state, event) => ([
 
 const UpdateServerTime = (state, event) => {
   const data = {
-    serverTime: formatDateTime(new Date()),   // ISO 8601
+    serverTime: formatDateTime_ISO8601(new Date()),
   };
   return [
     DisableInputs(state),
@@ -489,11 +531,17 @@ const ShowGraph = ({sensorData}) => {
 
 app({
   init: [
-    initialState,
+    UpdateUI(initialState),
     [fetchJson, ["api/status", GotServerStatus]],
   ],
 
-  view: ({serverstatus, activeTab, disableInputs, editstatus}) => h("div", {}, [
+  subscriptions: (state) => [
+    [every, [1000, UpdateUI]],
+  ],
+
+  view: ({serverstatus, clientTime, displayedServerTime, activeTab, disableInputs, editstatus}) => {
+
+    return h("div", {}, [
     h("h1", {}, text("PlantWaterOS")),
 
     h("nav", {}, [
@@ -504,7 +552,8 @@ app({
     activeTab == "status" && h('main', {}, [
       h("dl", {}, [
         h("dt", {}, text("Server time:")),
-        h("dd", {}, text(serverstatus.serverTime)),
+        h("dd", {}, text(formatDateTime_simple(displayedServerTime))),
+
         h("dt", {}, text("Server boot time:")),
         h("dd", {}, text(serverstatus.bootTime)),
         h("dt", {}, text("IP:")),
@@ -555,7 +604,11 @@ app({
         h("dl", {}, [
           h("dt", {}, text("Server time")),
           h("dd", {}, [
-            h("div", {}, text(serverstatus.serverTime)),
+            h("div", {}, text(formatDateTime_simple(displayedServerTime))),
+          ]),
+          h("dt", {}, text("Client time")),
+          h("dd", {}, [
+            h("div", {}, text(formatDateTime_simple(clientTime))),
           ]),
           h("dt", {}, []),
           h("dd", {}, [
@@ -654,7 +707,8 @@ app({
       ShowGraph(serverstatus),
     ]), // </main>
 
-  ]),
+    ]); // outer div
+  },
 
   node: document.getElementById("app"),
 })
