@@ -397,20 +397,29 @@ void readSensor()
     curSensorRepeat = 0;
   }
   if (curSensorRepeat < numSensorRepeat) {
-    logfile.open();
-    logfile << now << ": " << curSensorRepeat << " " << temperature << " " << sensorValue << endl;
     sensorReadingRepetitions[curSensorRepeat] = SensorRecord { now.unixtime(), sensorValue };
     ++curSensorRepeat;
 
     if (curSensorRepeat == numSensorRepeat) {
-      std::nth_element(
+      std::sort(
           sensorReadingRepetitions.begin(),
-          sensorReadingRepetitions.begin() + numSensorRepeat / 2,
           sensorReadingRepetitions.end(),
           [](const SensorRecord& a, const SensorRecord& b) {
             return a.value < b.value;
           });
-      sensorRecords.push_back(sensorReadingRepetitions[numSensorRepeat / 2]);
+
+      const auto& q25 = sensorReadingRepetitions[numSensorRepeat * 1 / 4];
+      const auto& q50 = sensorReadingRepetitions[numSensorRepeat * 2 / 4];
+      const auto& q75 = sensorReadingRepetitions[numSensorRepeat * 3 / 4];
+
+      logfile.open();
+      logfile << now << ": " << temperature
+        << " " << q25.value
+        << " " << q50.value
+        << " " << q75.value
+        << endl;
+
+      sensorRecords.push_back(q50);
     }
   }
 }
