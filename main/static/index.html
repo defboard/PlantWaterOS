@@ -98,6 +98,18 @@ dd input[type="button"] {
   width: 100%;
 }
 
+dd:has(span.button) {
+  cursor: pointer;
+}
+dd span.button {
+  font-weight: bold;
+  margin-left: 0.5em;
+  margin-right: 0.5em;
+}
+dd:hover span.button {
+  color: gray;
+}
+
 dt::after {
   content: " (*)";
   visibility: hidden;
@@ -604,20 +616,9 @@ app({
         h("legend", {}, text("System settings")),
         h("dl", {}, [
           h("dt", {}, text("Server time")),
-          h("dd", {}, [
-            h("div", {}, text(formatDateTime_simple(displayedServerTime))),
-          ]),
-          h("dt", {}, text("Client time")),
-          h("dd", {}, [
-            h("div", {}, text(formatDateTime_simple(clientTime))),
-          ]),
-          h("dt", {}, []),
-          h("dd", {}, [
-            h("input", {
-              type: "button",
-              value: "Update",
-              onclick: UpdateServerTime,
-            }),
+          h("dd", {onclick: UpdateServerTime}, [
+            h("span", {}, text(formatDateTime_simple(displayedServerTime))),
+            h("span", {class: "button"}, text("🗘")),
           ]),
         ]), // </dl>
       ]),
