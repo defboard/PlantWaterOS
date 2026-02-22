@@ -33,7 +33,9 @@ struct SensorRecord {
     uint32_t time;
     int value;
 };
-extern RingBuffer<SensorRecord, 1000> sensorRecords;
+extern RingBuffer<SensorRecord, 30> sensorRecordsA;         // one value every  1s for 30s
+extern RingBuffer<SensorRecord, 40> sensorRecordsB;         // one value every 30s for 20m
+extern RingBuffer<SensorRecord, 1008> sensorRecordsC;       // one value every 20m for 14d
 
 extern StreamString eventLog;
 

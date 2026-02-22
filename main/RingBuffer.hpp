@@ -1,11 +1,12 @@
 #pragma once
 #include <cstddef>
+#include <iterator>
 
 
 template <class T, size_t N>
 class RingBuffer
 {
-  T data_[N];
+  T data_[N] { };
   size_t size_ = 0;
   size_t begin_ = 0;
 
@@ -22,9 +23,24 @@ public:
     }
   }
 
-  const T& operator[] (size_t i) const
+  const T& back() const
+  {
+    return at(size_ - 1);
+  }
+
+  const T& at_pos(size_t i) const
+  {
+    return data_[i % N];
+  }
+
+  const T& at(size_t i) const
   {
     return data_[(begin_ + i) % N];
+  }
+
+  const T& operator[] (size_t i) const
+  {
+    return at(i);
   }
 
   size_t size() const
@@ -32,7 +48,15 @@ public:
     return size_;
   }
 
-  friend class iterator;
+  static constexpr size_t capacity()
+  {
+    return N;
+  }
+
+  size_t pos() const
+  {
+    return (begin_ + size_) % N;
+  }
 
   class iterator
   {
@@ -48,8 +72,18 @@ public:
     }
 
   public:
-    const T& operator* () {
+    using iterator_category = std::forward_iterator_tag;
+    using value_type = T;
+    using difference_type = long;
+    using pointer = const T*;
+    using reference = const T&;
+
+    reference operator* () {
         return rb_[offset_];
+    }
+
+    pointer operator-> () {
+        return &rb_[offset_];
     }
 
     iterator& operator++() {
@@ -67,6 +101,19 @@ public:
 
     bool operator != (const iterator& other) const {
         return not (*this == other);
+    }
+
+    long operator - (const iterator& other) const {
+        return offset_ - other.offset_;
+    }
+
+    iterator operator + (size_t num) {
+        num = std::min(num, rb_.size() - offset_);
+        return iterator(rb_, offset_ + num);
+    }
+    iterator operator - (size_t num) {
+        num = std::min(num, offset_);
+        return iterator(rb_, offset_ - num);
     }
   };
 

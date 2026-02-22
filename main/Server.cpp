@@ -142,12 +142,9 @@ void onHttpApiStatus()
   json.put_plain("sensorValue", sensorValue);
 
   json.put_array("sensorData");
-  for (const SensorRecord& record : sensorRecords) {
-    json.put_array();
-    json.put_plain(record.time);
-    json.put_plain(record.value);
-    json.end_array();
-  }
+  for (const SensorRecord& record : sensorRecordsC) { json.put_plain(record); }
+  for (const SensorRecord& record : sensorRecordsB) { json.put_plain(record); }
+  for (const SensorRecord& record : sensorRecordsA) { json.put_plain(record); }
   json.end_array();
 
   json.put_string("temperature", temperature);

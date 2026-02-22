@@ -44,11 +44,9 @@ const int PIN_BTN_RIGHT     = 14;
 const int SERIAL_BAUD_RATE = 9600;
 
 const TimeSpan firstPumpDelay (1/*days*/, 0/*hours*/, 0/*minutes*/, 0/*seconds*/);
-const TimeSpan logInterval    (0/*days*/, 0/*hours*/, 20/*minutes*/, 0/*seconds*/);
 TimeSpan pumpInterval         (3/*days*/, 0/*hours*/, 0/*minutes*/, 0/*seconds*/);
 int pumpDuration = 2000;
 
-const int numSensorRepeat = 20;
 const int delaySensorRepeat = 1000;   // [ms]
 
 // Native display width is W x H = 128 x 64:
@@ -84,7 +82,6 @@ LogFile logfile("/sensor.log", Serial);
 
 DateTime now;
 DateTime bootTime;
-DateTime nextLogTime;
 DateTime prevPumpTime;
 DateTime nextPumpTime;
 
@@ -92,8 +89,9 @@ int numPumpEvents = 0;
 
 int sensorValue = 0;
 Temperature temperature;
-RingBuffer<SensorRecord, 1000> sensorRecords;
-std::array<SensorRecord, numSensorRepeat> sensorReadingRepetitions;
+RingBuffer<SensorRecord, 30> sensorRecordsA;
+RingBuffer<SensorRecord, 40> sensorRecordsB;
+RingBuffer<SensorRecord, 1008> sensorRecordsC;
 
 Button buttonLeft(PIN_BTN_LEFT);
 Button buttonMiddle(PIN_BTN_MIDDLE);
@@ -153,7 +151,7 @@ void setup()
   uint32_t cardSize = SD.cardSize() / (1024 * 1024);
   eventLog << "SDCard Size: " << cardSize << "MB" << endl;
 
-  // Init nextLogTime
+  // Init boot time
   bootTime = rtc.now();
   logfile.open();
   logfile << bootTime << ": system booted - "
@@ -161,7 +159,6 @@ void setup()
         ? "RTC power loss"
         : "RTC remained powered")
     << endl;
-  nextLogTime = bootTime;
 
   if (!display.begin(SSD1306_SWITCHCAPVCC, DISPLAY_ADDRESS, true, false)) {
     eventLog << "Display initialization failed." << endl;
@@ -221,8 +218,6 @@ int num_screens = 5;
 int actionScreen = 0;
 int numActionScreens = 3;
 bool isActionScreenActive = false;
-
-int curSensorRepeat = numSensorRepeat;
 
 bool pumpIsStarted = false;
 
@@ -392,34 +387,41 @@ void readSensor()
   sensorValue = analogRead(PIN_SENSOR);
   temperature.degreeCelsius = rtc.getTemperature();
 
-  if (now >= nextLogTime) {
-    nextLogTime = now + logInterval;
-    curSensorRepeat = 0;
-  }
-  if (curSensorRepeat < numSensorRepeat) {
-    sensorReadingRepetitions[curSensorRepeat] = SensorRecord { now.unixtime(), sensorValue };
-    ++curSensorRepeat;
+  sensorRecordsA.push_back( SensorRecord { now.unixtime(), sensorValue } );
 
-    if (curSensorRepeat == numSensorRepeat) {
-      std::sort(
-          sensorReadingRepetitions.begin(),
-          sensorReadingRepetitions.end(),
-          [](const SensorRecord& a, const SensorRecord& b) {
-            return a.value < b.value;
-          });
+  if (sensorRecordsA.pos() == 0) {
+    // Compute median over first sensorRecordsA (i.e. short term log):
+    const size_t numSensorRepeat = sensorRecordsA.capacity();
+    std::array<SensorRecord, numSensorRepeat> sensorReadingRepetitions;
+    std::copy(
+        sensorRecordsA.begin(),
+        sensorRecordsA.end(),
+        sensorReadingRepetitions.begin());
+    std::sort(
+        sensorReadingRepetitions.begin(),
+        sensorReadingRepetitions.end(),
+        [](const SensorRecord& a, const SensorRecord& b) {
+          return a.value < b.value;
+        });
 
-      const auto& q25 = sensorReadingRepetitions[numSensorRepeat * 1 / 4];
-      const auto& q50 = sensorReadingRepetitions[numSensorRepeat * 2 / 4];
-      const auto& q75 = sensorReadingRepetitions[numSensorRepeat * 3 / 4];
+    const auto& q25 = sensorReadingRepetitions[numSensorRepeat * 1 / 4];
+    const auto& q50 = sensorReadingRepetitions[numSensorRepeat * 2 / 4];
+    const auto& q75 = sensorReadingRepetitions[numSensorRepeat * 3 / 4];
+    sensorRecordsB.push_back(q50);
 
+    // Move first median into long-term log:
+    if (sensorRecordsB.pos() == 0) {
+      sensorRecordsC.push_back(sensorRecordsB[0]);
+    }
+
+    // Log first median:
+    if (sensorRecordsB.pos() == 1) {
       logfile.open();
       logfile << now << ": " << temperature
         << " " << q25.value
         << " " << q50.value
         << " " << q75.value
         << endl;
-
-      sensorRecords.push_back(q50);
     }
   }
 }
@@ -635,7 +637,6 @@ void _setSystemTime()
 
   now = now + delta;
   bootTime = bootTime + delta;
-  nextLogTime = nextLogTime + delta;
   prevPumpTime = prevPumpTime + delta;
   nextPumpTime = nextPumpTime + delta;
 
