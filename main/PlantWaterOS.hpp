@@ -6,7 +6,8 @@
 #include <RTClib.h>
 
 
-const char* const PREFS_NAMESPACE = "PlantWaterOS";     // size <= 16!
+constexpr char PREFS_NAMESPACE[] = "PlantWaterOS";
+static_assert(sizeof(PREFS_NAMESPACE) <= 16);
 
 
 struct Temperature {
