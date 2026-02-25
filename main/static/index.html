@@ -51,11 +51,6 @@ nav > div.active:hover {
 main {
 }
 
-span.spacer {
-  display: inline-block;
-  width: 1em;
-}
-
 fieldset {
   padding: 0px 3px 3px 3px; /* t r b l */
   margin-top: 5px;
@@ -665,7 +660,7 @@ app({
             }),
             h("label", {for: "wifiSTA"}, text("Client ")),
 
-            h("span", {class: "spacer"}, []),
+            h("br", {}, []),
             h("input", {
               type: "radio",
               name: "wifiMode",
@@ -676,7 +671,7 @@ app({
             }),
             h("label", {for: "wifiAP"}, text("Hotspot")),
 
-            h("span", {class: "spacer"}, []),
+            h("br", {}, []),
             h("input", {
               type: "radio",
               name: "wifiMode",
