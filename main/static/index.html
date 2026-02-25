@@ -378,7 +378,7 @@ const EditNumber = (key, multiplier) => (state, event) =>  storeLocal({
   ...state,
   editstatus: {
     ...state.editstatus,
-    [key]: event.target.value * (multiplier ?? 1),
+    [key]: Math.round(event.target.value * (multiplier ?? 1)),
   },
 });
 
@@ -627,8 +627,9 @@ app({
             h("input", {
               type: "number",
               value: (editstatus.pumpInterval ?? serverstatus.pumpInterval) / (24 * 3600),
-              min: "1",
-              max: "99",
+              min: "0.1",
+              max: "9.9",
+              step: "0.1",
               oninput: EditNumber('pumpInterval', 24 * 3600),
             }),
             h("span", {}, text(" days")),
@@ -638,12 +639,13 @@ app({
           h("dd", {class: {modified: !hasDefaultValue({serverstatus, editstatus}, "pumpDuration")}}, [
             h("input", {
               type: "number",
-              value: editstatus.pumpDuration ?? serverstatus.pumpDuration,
-              min: "100",
-              max: "9999",
-              oninput: EditNumber('pumpDuration'),
+              value: (editstatus.pumpDuration ?? serverstatus.pumpDuration) / 1000,
+              min: "0.1",
+              max: "9.9",
+              step: "0.1",
+              oninput: EditNumber('pumpDuration', 1000),
             }),
-            h("span", {}, text(" ms")),
+            h("span", {}, text(" s")),
           ]),
         ]), // </dl>
       ]),
