@@ -115,6 +115,7 @@ void clearDisplayLines(int firstLine, int num=1);
 void opMessageTask(void*);
 void onPumpStopTimer(TimerHandle_t);
 void _setSystemTime();
+void _setNextPumpTime();
 
 
 // Implementation
@@ -560,6 +561,10 @@ void dispatchMessage(DeviceOperationMessage message)
     case MessageType::SetSystemTime:
       _setSystemTime();
       break;
+
+    case MessageType::SetNextPumpTime:
+      _setNextPumpTime();
+      break;
   };
 }
 
@@ -641,6 +646,24 @@ void _setSystemTime()
   nextPumpTime = nextPumpTime + delta;
 
   rtc.adjust(now);
+  writeNextPumpTime(nextPumpTime);
+}
+
+DateTime _newPumpTime;
+
+bool setNextPumpTime(DateTime pumpTime)
+{
+  if (pumpTime.isValid()) {
+    _newPumpTime = pumpTime;
+    sendMessage(MessageType::SetNextPumpTime, nullptr, portMAX_DELAY);
+    return true;
+  }
+  return false;
+}
+
+void _setNextPumpTime()
+{
+  nextPumpTime = _newPumpTime;
   writeNextPumpTime(nextPumpTime);
 }
 

@@ -190,6 +190,11 @@ void onHttpApiPrefsPost()
   prefs.begin(PREFS_NAMESPACE, /* readOnly */ false);
 
   // Pump settings
+  if (server.hasArg("nextPumpTime")) {
+    String serverTime = server.arg("nextPumpTime");
+    setNextPumpTime(serverTime.c_str());            // ISO 8601 format
+  }
+
   if (server.hasArg("pumpDuration")) {
     int pumpDuration = server.arg("pumpDuration").toInt();
     setPumpDuration(prefs, pumpDuration);

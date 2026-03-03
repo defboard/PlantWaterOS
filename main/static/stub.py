@@ -15,7 +15,7 @@ state = SimpleNamespace()
 state.bootTime = datetime.now()
 state.pumpInterval = timedelta(3)
 state.pumpDuration = 2000
-state.prevPumpTime = datetime(2000, 1, 1, 0, 0, 0)
+state.prevPumpTime = state.bootTime - timedelta(1)
 state.nextPumpTime = state.prevPumpTime + state.pumpInterval
 state.numPumpEvents = 0
 state.sensorData = example['sensorData'][:]
@@ -129,6 +129,12 @@ def api_pump_reset():
 def prefs():
     data = request.form
     log("updating prefs ", data)
+
+    nextPumpTime = data.get("nextPumpTime")
+    if nextPumpTime is not None:
+        state.nextPumpTime = datetime.strptime(
+            nextPumpTime, "%Y-%m-%d %H:%M:%S")
+        log("pumpInterval =", nextPumpTime)
 
     pumpInterval = data.get("pumpInterval")
     if pumpInterval is not None:

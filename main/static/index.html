@@ -241,6 +241,13 @@ const formatDateTime_ISO8601 = (d) => {
   return `${yyyy}-${mm}-${dd}T${HH}:${MM}:${SS}.${fff}Z`;
 };
 
+const formatDateTime_input = (d) => {
+  if (d) {
+    const {yyyy, mm, dd, HH, MM, SS, fff} = _localTime(d);
+    return `${yyyy}-${mm}-${dd}T${HH}:${MM}`;
+  }
+};
+
 const formatDateTime_simple = (d) => {
   if (!d) {
     return "n/a";
@@ -249,6 +256,9 @@ const formatDateTime_simple = (d) => {
   return `${yyyy}-${mm}-${dd} ${HH}:${MM}:${SS}`;
 };
 
+const parseDateTime_input = (d) => {
+  return formatDateTime_simple(new Date(Date.parse(d)));
+};
 
 // Effects
 
@@ -330,11 +340,6 @@ const ActivatePump = (state, event) => ([
   [fetchJson, ["api/pump/activate", GotServerStatus]],
 ]);
 
-const ResetPumpTime = (state, event) => ([
-  DisableInputs(state),
-  [fetchJson, ["api/pump/reset", GotServerStatus]],
-]);
-
 const RebootServer = (state, event) => ([
   DisableInputs(state),
   [fetchJson, ["api/server/reboot", GotServerStatus]],
@@ -382,6 +387,14 @@ const EditText = (key) => (state, event) => storeLocal({
   editstatus: {
     ...state.editstatus,
     [key]: event.target.value,
+  },
+});
+
+const EditDate = (key) => (state, event) => storeLocal({
+  ...state,
+  editstatus: {
+    ...state.editstatus,
+    [key]: parseDateTime_input(event.target.value),
   },
 });
 
@@ -592,7 +605,6 @@ app({
 
       h("div", {class: "actions"}, [
         h("button", {onclick: ActivatePump, disabled: disableInputs}, text("Pump now!")),
-        h("button", {onclick: ResetPumpTime, disabled: disableInputs}, text("Reset pump timer!")),
         h("button", {onclick: RebootServer, disabled: disableInputs}, text("Reboot!")),
       ]),
 
@@ -616,7 +628,18 @@ app({
 
       h("fieldset", {}, [
         h("legend", {}, text("Pump settings")),
+
         h("dl", {}, [
+          h("dt", {class: {modified: !hasDefaultValue({serverstatus, editstatus}, "nextPumpTime")}}, text("Next pump time:")),
+          h("dd", {class: {modified: !hasDefaultValue({serverstatus, editstatus}, "nextPumpTime")}}, [
+            h("input", {
+              type: "datetime-local",
+              value: formatDateTime_input(new Date(Date.parse(editstatus.nextPumpTime ?? serverstatus.nextPumpTime))),
+              min: formatDateTime_input(new Date()),
+              oninput: EditDate('nextPumpTime'),
+            }),
+          ]),
+
           h("dt", {class: {modified: !hasDefaultValue({serverstatus, editstatus}, "pumpInterval")}}, text("Pump interval:")),
           h("dd", {class: {modified: !hasDefaultValue({serverstatus, editstatus}, "pumpInterval")}}, [
             h("input", {
