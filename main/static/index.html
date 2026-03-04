@@ -322,8 +322,12 @@ const GotServerStatus = (state, serverstatus) => {
 const UpdateUI = (state) => {
   const clientTime = new Date();
   const displayedServerTime = adjustTime(clientTime, state.timeDelta);
+  const editstatus = Object.fromEntries(Object.entries(state.editstatus).filter(
+    ([key, value]) => (value != state.serverstatus[key]),
+  ));
   return {
     ...state,
+    editstatus,
     clientTime,
     displayedServerTime,
   };
@@ -355,10 +359,9 @@ const UpdateServerTime = (state, event) => {
   ];
 };
 
-/* TODO */
-const isDefaultValue = (state, key, value) => (state.serverstatus[key] == value);
+// Preferences
 const hasDefaultValue = (state, key) => (
-  state.editstatus[key] == undefined || isDefaultValue(state, key, state.editstatus[key])
+  state.editstatus[key] == undefined
 );
 
 const PrefsSave = (state, event) => ([
