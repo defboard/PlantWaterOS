@@ -192,17 +192,24 @@ void onHttpApiPrefsPost()
   // Pump settings
   if (server.hasArg("nextPumpTime")) {
     String serverTime = server.arg("nextPumpTime");
-    setNextPumpTime(serverTime.c_str());            // ISO 8601 format
+    DateTime newServerTime(serverTime.c_str());     // ISO 8601 format
+    if (newServerTime != now) {
+      setNextPumpTime(newServerTime);
+    }
   }
 
   if (server.hasArg("pumpDuration")) {
     int pumpDuration = server.arg("pumpDuration").toInt();
-    setPumpDuration(prefs, pumpDuration);
+    if (pumpDuration != getPumpDuration()) {
+      setPumpDuration(prefs, pumpDuration);
+    }
   }
 
   if (server.hasArg("pumpInterval")) {
     int32_t pumpInterval = server.arg("pumpInterval").toInt();
-    setPumpInterval(prefs, pumpInterval);
+    if (pumpInterval != getPumpInterval()) {
+      setPumpInterval(prefs, pumpInterval);
+    }
   }
 
   // WiFi settings
@@ -220,12 +227,16 @@ void onHttpApiPrefsPost()
     restart_wifi = true;
   }
   if (mode and mode != WIFI_OFF and wifi_ssid.length() > 0 and wifi_password.length() > 0) {
-    setWifiNetwork(prefs, *mode, wifi_ssid, wifi_password);
-    restart_wifi = true;
+    if (mode != WIFI_MODE or wifi_ssid != WIFI_SSID or wifi_password != WIFI_PASSWORD) {
+      setWifiNetwork(prefs, *mode, wifi_ssid, wifi_password);
+      restart_wifi = true;
+    }
   }
   if (mode and mode != WIFI_OFF and wifi_hostname.length() > 0) {
-    setWifiHostname(prefs, wifi_hostname);
-    restart_wifi = true;
+    if (wifi_hostname != WIFI_HOSTNAME) {
+      setWifiHostname(prefs, wifi_hostname);
+      restart_wifi = true;
+    }
   }
 
   // Send status update before disconnecting WiFi

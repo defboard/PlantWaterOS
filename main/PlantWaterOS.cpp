@@ -595,6 +595,9 @@ bool setPumpDuration(Preferences& prefs, int duration)
   if (duration < 100 or duration > 10 * 1000) {
     return false;
   }
+  if (duration == pumpDuration) {
+    return true;
+  }
 
   pumpDuration = duration;
 
@@ -615,6 +618,9 @@ bool setPumpInterval(Preferences& prefs, int32_t seconds)
 {
   if (seconds < 6 * 3600) {
     return false;
+  }
+  if (seconds == pumpInterval.totalseconds()) {
+    return true;
   }
 
   pumpInterval = TimeSpan(seconds);
@@ -639,6 +645,9 @@ void _setSystemTime()
   now = rtc.now();
 
   const TimeSpan delta = _newSystemTime - now;
+  if (delta.totalseconds() == 0) {
+    return;
+  }
 
   now = now + delta;
   bootTime = bootTime + delta;
@@ -663,6 +672,9 @@ bool setNextPumpTime(DateTime pumpTime)
 
 void _setNextPumpTime()
 {
+  if (_newPumpTime == nextPumpTime) {
+    return;
+  }
   nextPumpTime = _newPumpTime;
   writeNextPumpTime(nextPumpTime);
 }
