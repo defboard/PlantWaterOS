@@ -1,8 +1,14 @@
- # general
+# general
 
-- prevent race conditions using event queue + mutexes
-    - pump on + reboot
-    - log file read + write
+- Wifi: Fallback
+- Wifi: generate password based on chip id/...?
+
+- refine the sensordata logging logic
+
+- display:
+    - let user choose pumpDuration / pumpInterval / nextpumptime
+
+- event queue rework?
 
 
 # Time
@@ -15,32 +21,23 @@
 
 # web UI
 
-- hyperapp UI + REST endpoints (JSON)
-
-- reboot button
-
+- simplify table / input creation
 - async HTTP
-
 - https?
 
-- pump now
+- AUTH!
+
+- more frequent updates .. websockets?
+- graph... xaxis/yaxis
 
 
 # Logging
 
 - rework `fullSystemLog` into `eventLog` + last 100 sensor lines
 - binary sensor data log (?)
-- MultiplexPrint
-
-
-# JoyStick control
 
 
 # settings
-
-- use `Preferences.h` library
-- WiFi SSID + password
-    - if not defined, start as WiFi station
 
 - sensor pin(s)
 - sensor log frequency
