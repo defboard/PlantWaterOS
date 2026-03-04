@@ -213,6 +213,7 @@ updateRecursive(initialState, {
 const storeLocal = (state) => {
   localStorage.setItem(storageKey, JSON.stringify({
     activeTab: state.activeTab,
+    serverstatus: state.serverstatus,
     editstatus: state.editstatus,
   }));
   return UpdateUI(state);
