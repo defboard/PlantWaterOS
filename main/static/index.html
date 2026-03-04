@@ -98,16 +98,10 @@ dd input[type="button"] {
   width: 100%;
 }
 
-dd:has(span.button) {
-  cursor: pointer;
-}
-dd span.button {
+dd button {
   font-weight: bold;
   margin-left: 0.5em;
   margin-right: 0.5em;
-}
-dd:hover span.button {
-  color: gray;
 }
 
 dt::after {
@@ -616,9 +610,11 @@ app({
         h("legend", {}, text("System settings")),
         h("dl", {}, [
           h("dt", {}, text("Server time")),
-          h("dd", {onclick: UpdateServerTime}, [
+          h("dd", {}, [
             h("span", {}, text(formatDateTime_simple(displayedServerTime))),
-            h("span", {class: "button"}, text("🗘")),
+            h("button", {
+              onclick: UpdateServerTime,
+            }, text("🗘")),
           ]),
         ]), // </dl>
       ]),
