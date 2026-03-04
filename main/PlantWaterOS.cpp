@@ -41,7 +41,7 @@ const int PIN_BTN_MIDDLE    = 12;
 const int PIN_BTN_RIGHT     = 14;
 
 // Configuration
-const int SERIAL_BAUD_RATE = 9600;
+const int SERIAL_BAUD_RATE = 115200;
 
 const TimeSpan firstPumpDelay (1/*days*/, 0/*hours*/, 0/*minutes*/, 0/*seconds*/);
 TimeSpan pumpInterval         (3/*days*/, 0/*hours*/, 0/*minutes*/, 0/*seconds*/);
