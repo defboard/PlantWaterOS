@@ -2,7 +2,8 @@
 
 VERSION=v5.5
 
-options=(--rm -v "$PWD:/project" -w /project -u $UID)
+# Not using `-u $UID` for now, because it doesn't work as well with --device:
+options=(--rm -v "$PWD:/project" -w /project)
 
 if [[ -e /dev/ttyUSB0 ]]; then
     options+=(--device /dev/ttyUSB0:/dev/ttyUSB0)
