@@ -336,8 +336,7 @@ const UpdateUI = (state) => {
 const EnableInputs = (state) => storeLocal({...state, disableInputs: false});
 const DisableInputs = (state) => storeLocal({...state, disableInputs: true});
 
-const ShowTabStatus = (state) => storeLocal({...state, activeTab: "status"});
-const ShowTabPrefs = (state) => storeLocal({...state, activeTab: "prefs"});
+const ShowTab = (activeTab) => (state) => storeLocal({...state, activeTab});
 
 const ActivatePump = (state, event) => ([
   DisableInputs(state),
@@ -563,8 +562,8 @@ app({
     h("h1", {}, text("PlantWaterOS")),
 
     h("nav", {}, [
-      h("div", {onclick: ShowTabStatus, class: {active: activeTab == "status"}}, text("Status")),
-      h("div", {onclick: ShowTabPrefs, class: {active: activeTab == "prefs"}}, text("Preferences")),
+      h("div", {onclick: ShowTab("status"), class: {active: activeTab == "status"}}, text("Status")),
+      h("div", {onclick: ShowTab("prefs"), class: {active: activeTab == "prefs"}}, text("Preferences")),
     ]),
 
     activeTab == "status" && h('main', {}, [
