@@ -568,43 +568,61 @@ app({
     ]),
 
     activeTab == "status" && h('main', {}, [
-      h("dl", {}, [
-        h("dt", {}, text("Server time:")),
-        h("dd", {}, text(formatDateTime_simple(displayedServerTime))),
+      h("fieldset", {}, [
+        h("legend", {}, text("Host device")),
+        h("dl", {}, [
+          h("dt", {}, text("Server time:")),
+          h("dd", {}, text(formatDateTime_simple(displayedServerTime))),
 
-        h("dt", {}, text("Server boot time:")),
-        h("dd", {}, text(serverstatus.bootTime)),
-        h("dt", {}, text("IP:")),
-        h("dd", {}, text(serverstatus.localIP)),
-
-        h("dt", {}, text("Last pump time:")),
-        h("dd", {}, text(serverstatus.prevPumpTime)),
-        h("dt", {}, text("Next pump time:")),
-        h("dd", {}, text(serverstatus.nextPumpTime)),
-
-        h("dt", {}, text("Total pump events:")),
-        h("dd", {}, text(serverstatus.numPumpEvents)),
-
-        h("dt", {}, text("Soil moisture:")),
-        h("dd", {}, text(serverstatus.sensorValue)),
-        h("dt", {}, text("Temperature:")),
-        h("dd", {}, text(parseFloat(serverstatus.temperature).toFixed(1) + "°C")),
-
-        h("dt", {}, text("System events:")),
-        h("dd", {}, [
-          h("a", {href: "file/events.log", target: "_blank"}, text("events.log")),
+          h("dt", {}, text("Server boot time:")),
+          h("dd", {}, text(serverstatus.bootTime)),
+          h("dt", {}, text("IP:")),
+          h("dd", {}, text(serverstatus.localIP)),
         ]),
+      ]),
 
-        h("dt", {}, text("Logfile:")),
-        h("dd", {}, [
-          h("a", {href: "file/sensor.log", target: "_blank"}, text("sensor.log")),
-        ]),
+      h("fieldset", {}, [
+        h("legend", {}, text("Pump")),
+        h("dl", {}, [
+          h("dt", {}, text("Last pump time:")),
+          h("dd", {}, text(serverstatus.prevPumpTime)),
+          h("dt", {}, text("Next pump time:")),
+          h("dd", {}, text(serverstatus.nextPumpTime)),
 
-        h("dt", {}, text("Update firmware:")),
-        h("dd", {}, [
-          h("a", {href: "update", target: "_blank"}, text("update")),
+          h("dt", {}, text("Total pump events:")),
+          h("dd", {}, text(serverstatus.numPumpEvents)),
         ]),
-      ]), // </dl>
+      ]),
+
+      h("fieldset", {}, [
+        h("legend", {}, text("Sensor")),
+        h("dl", {}, [
+          h("dt", {}, text("Soil moisture:")),
+          h("dd", {}, text(serverstatus.sensorValue)),
+          h("dt", {}, text("Temperature:")),
+          h("dd", {}, text(parseFloat(serverstatus.temperature).toFixed(1) + "°C")),
+        ]),
+      ]),
+
+      h("fieldset", {}, [
+        h("legend", {}, text("Links")),
+        h("dl", {}, [
+          h("dt", {}, text("System events:")),
+          h("dd", {}, [
+            h("a", {href: "file/events.log", target: "_blank"}, text("events.log")),
+          ]),
+
+          h("dt", {}, text("Logfile:")),
+          h("dd", {}, [
+            h("a", {href: "file/sensor.log", target: "_blank"}, text("sensor.log")),
+          ]),
+
+          h("dt", {}, text("Update firmware:")),
+          h("dd", {}, [
+            h("a", {href: "update", target: "_blank"}, text("update")),
+          ]),
+        ]),
+      ]),
 
       h("div", {class: "actions"}, [
         h("button", {onclick: ActivatePump, disabled: disableInputs}, text("Pump now!")),
