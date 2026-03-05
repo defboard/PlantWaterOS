@@ -260,6 +260,9 @@ const parseDateTime_input = (d) => {
   return formatDateTime_simple(new Date(Date.parse(d)));
 };
 
+const DAYS_TO_SECONDS = 24 * 3600;
+const SECONDS_TO_MILLIS = 1000;
+
 // Effects
 
 const fetchJson = (dispatch, [url, action]) => {
@@ -363,50 +366,92 @@ const hasDefaultValue = (state, key) => (
   state.editstatus[key] == undefined
 );
 
+const SetEditField = (state, key, value) => ({
+  ...state,
+  editstatus: {
+    ...state.editstatus,
+    [key]: value,
+  },
+});
+
 const PrefsSave = (state, event) => ([
-  DisableInputs({
-    ...state,
-    editstatus: {
-      ...state.editstatus,
-      wifiPassword: "",
-    },
-  }),
+  DisableInputs(SetEditField(state, "wifiPassword", undefined)),
   [postRequest, ["prefs", state.editstatus, GotServerStatus]],
 ]);
 
-const PrefsRestore = (state,) => storeLocal({...state, editstatus: {}});
+const PrefsRestore = (state) => storeLocal({...state, editstatus: {}});
 
-const EditNumber = (key, multiplier) => (state, event) =>  storeLocal({
-  ...state,
-  editstatus: {
-    ...state.editstatus,
-    [key]: Math.round(event.target.value * (multiplier ?? 1)),
-  },
+const EditField = (key, parse) => (state, event) => storeLocal(SetEditField(state, key, parse(event.target.value)));
+
+const EditNumber = (key, multiplier) => EditField(key, (value) => Math.round(value * (multiplier ?? 1)));
+const EditText = (key) => EditField(key, (value) => value);
+const EditDate = (key) => EditField(key, (value) => parseDateTime_input(value));
+
+
+// UI components
+
+const Fieldset = (legend, fields) => (
+  h("fieldset", {}, [
+    h("legend", {}, text(legend)),
+    h("dl", {}, fields.flat(1)),
+  ])
+);
+
+const Field = (dt, props, dd) => ([
+  h("dt", props, text(dt)),
+  h("dd", props, dd),
+]);
+
+const HyperRef = (href, name) => (
+  h("a", {href, target: "_blank"}, text(name))
+);
+
+const InputField = (state, key, label, contentFunc) => {
+  const default_ = state.serverstatus[key];
+  const value = state.editstatus[key] ?? default_;
+  const modified = value != default_;
+  return Field(label, {class: {modified}}, contentFunc(key, value));
+};
+
+const TextInput = (props) => (key, value) => h("input", {
+  type: "text",
+  value,
+  oninput: EditText(key),
+  ...props,
 });
 
-const EditText = (key) => (state, event) => storeLocal({
-  ...state,
-  editstatus: {
-    ...state.editstatus,
-    [key]: event.target.value,
-  },
+const NumberInput = (props, multiplier, unitName) => (key, value) => [
+  h("input", {
+    type: "number",
+    value: value / multiplier,
+    oninput: EditNumber(key, multiplier),
+    ...props,
+  }),
+  unitName &&
+  h("span", {}, text(unitName)),
+];
+
+const DateInput = (key, value) => h("input", {
+  type: "datetime-local",
+  value: formatDateTime_input(new Date(Date.parse(value))),
+  min: formatDateTime_input(new Date()),
+  oninput: EditDate(key),
 });
 
-const EditDate = (key) => (state, event) => storeLocal({
-  ...state,
-  editstatus: {
-    ...state.editstatus,
-    [key]: parseDateTime_input(event.target.value),
-  },
-});
-
-const ToggleCheckBox = (key) => (state, event) =>  storeLocal({
-  ...state,
-  editstatus: {
-    ...state.editstatus,
-    [key]: state.editstatus[key] ? 0 : 1,
-  },
-});
+const RadioList = (name, items) => (key, value) => (
+  items.flatMap((item, idx) => [
+    h("input", {
+      type: "radio",
+      name,
+      value: item.value,
+      id: name + item.value,
+      checked: value == item.value,
+      oninput: EditText(key),
+    }),
+    h("label", {for: name + item.value}, text(item.label)),
+    (idx == items.length - 1) || h("br", {}, []),
+  ])
+);
 
 
 // plotting
@@ -556,217 +601,83 @@ app({
     [every, [1000, UpdateUI]],
   ],
 
-  view: ({serverstatus, clientTime, displayedServerTime, activeTab, disableInputs, editstatus}) => {
+  view: (state) => {
+    const {serverstatus, displayedServerTime, activeTab, disableInputs, editstatus} = state;
+    const isWiFiOff = (editstatus.wifiMode ?? serverstatus.wifiMode) == "OFF";
 
     return h("div", {}, [
-    h("h1", {}, text("PlantWaterOS")),
+      h("h1", {}, text("PlantWaterOS")),
 
-    h("nav", {}, [
-      h("div", {onclick: ShowTab("status"), class: {active: activeTab == "status"}}, text("Status")),
-      h("div", {onclick: ShowTab("prefs"), class: {active: activeTab == "prefs"}}, text("Preferences")),
-    ]),
+      h("nav", {}, [
+        h("div", {onclick: ShowTab("status"), class: {active: activeTab == "status"}}, text("Status")),
+        h("div", {onclick: ShowTab("prefs"), class: {active: activeTab == "prefs"}}, text("Preferences")),
+      ]),
 
-    activeTab == "status" && h('main', {}, [
-      h("fieldset", {}, [
-        h("legend", {}, text("Host device")),
-        h("dl", {}, [
-          h("dt", {}, text("Server time:")),
-          h("dd", {}, text(formatDateTime_simple(displayedServerTime))),
-
-          h("dt", {}, text("Server boot time:")),
-          h("dd", {}, text(serverstatus.bootTime)),
-          h("dt", {}, text("IP:")),
-          h("dd", {}, text(serverstatus.localIP)),
+      activeTab == "status" && h('main', {}, [
+        Fieldset("Host device", [
+          Field("Server time:",        {}, text(formatDateTime_simple(displayedServerTime))),
+          Field("Server boot time:",   {}, text(serverstatus.bootTime)),
+          Field("IP:",                 {}, text(serverstatus.localIP)),
         ]),
-      ]),
 
-      h("fieldset", {}, [
-        h("legend", {}, text("Pump")),
-        h("dl", {}, [
-          h("dt", {}, text("Last pump time:")),
-          h("dd", {}, text(serverstatus.prevPumpTime)),
-          h("dt", {}, text("Next pump time:")),
-          h("dd", {}, text(serverstatus.nextPumpTime)),
-
-          h("dt", {}, text("Total pump events:")),
-          h("dd", {}, text(serverstatus.numPumpEvents)),
+        Fieldset("Pump", [
+          Field("Last pump time:",     {}, text(serverstatus.prevPumpTime)),
+          Field("Next pump time:",     {}, text(serverstatus.nextPumpTime)),
+          Field("Total pump events:",  {}, text(serverstatus.numPumpEvents)),
         ]),
-      ]),
 
-      h("fieldset", {}, [
-        h("legend", {}, text("Sensor")),
-        h("dl", {}, [
-          h("dt", {}, text("Soil moisture:")),
-          h("dd", {}, text(serverstatus.sensorValue)),
-          h("dt", {}, text("Temperature:")),
-          h("dd", {}, text(parseFloat(serverstatus.temperature).toFixed(1) + "°C")),
+        Fieldset("Sensor", [
+          Field("Soil moisture:",      {}, text(serverstatus.sensorValue)),
+          Field("Temperature:",        {}, text(parseFloat(serverstatus.temperature).toFixed(1) + "°C")),
         ]),
-      ]),
 
-      h("fieldset", {}, [
-        h("legend", {}, text("Links")),
-        h("dl", {}, [
-          h("dt", {}, text("System events:")),
-          h("dd", {}, [
-            h("a", {href: "file/events.log", target: "_blank"}, text("events.log")),
-          ]),
-
-          h("dt", {}, text("Logfile:")),
-          h("dd", {}, [
-            h("a", {href: "file/sensor.log", target: "_blank"}, text("sensor.log")),
-          ]),
-
-          h("dt", {}, text("Update firmware:")),
-          h("dd", {}, [
-            h("a", {href: "update", target: "_blank"}, text("update")),
-          ]),
+        Fieldset("Links", [
+          Field("System events:",      {}, HyperRef("file/events.log", "events.log")),
+          Field("Logfile:",            {}, HyperRef("file/sensor.log", "sensor.log")),
+          Field("Update firmware:",    {}, HyperRef("update", "update")),
         ]),
-      ]),
 
-      h("div", {class: "actions"}, [
-        h("button", {onclick: ActivatePump, disabled: disableInputs}, text("Pump now!")),
-        h("button", {onclick: RebootServer, disabled: disableInputs}, text("Reboot!")),
-      ]),
+        h("div", {class: "actions"}, [
+          h("button", {onclick: ActivatePump, disabled: disableInputs}, text("Pump now!")),
+          h("button", {onclick: RebootServer, disabled: disableInputs}, text("Reboot!")),
+        ]),
 
-      ShowGraph(serverstatus),
-    ]), // </main>
+        ShowGraph(serverstatus),
+      ]), // </main> "status"
 
-    activeTab == "prefs" && h('main', {}, [
+      activeTab == "prefs" && h('main', {}, [
 
-      h("fieldset", {}, [
-        h("legend", {}, text("System settings")),
-        h("dl", {}, [
-          h("dt", {}, text("Server time")),
-          h("dd", {}, [
+        Fieldset("System settings", [
+          Field("Server time", {}, [
             h("span", {}, text(formatDateTime_simple(displayedServerTime))),
-            h("button", {
-              onclick: UpdateServerTime,
-            }, text("🗘")),
+            h("button", {onclick: UpdateServerTime}, text("🗘")),
           ]),
-        ]), // </dl>
-      ]),
+        ]),
 
-      h("fieldset", {}, [
-        h("legend", {}, text("Pump settings")),
+        Fieldset("Pump settings", [
+          InputField(state, "nextPumpTime", "Next pump time:", DateInput),
+          InputField(state, "pumpInterval", "Pump interval:", NumberInput({min: 0.1, max: 9.9, step: 0.1}, DAYS_TO_SECONDS, " days")),
+          InputField(state, "pumpDuration", "Pump duration:", NumberInput({min: 0.1, max: 9.9, step: 0.1}, SECONDS_TO_MILLIS, " s")),
+        ]),
 
-        h("dl", {}, [
-          h("dt", {class: {modified: !hasDefaultValue({serverstatus, editstatus}, "nextPumpTime")}}, text("Next pump time:")),
-          h("dd", {class: {modified: !hasDefaultValue({serverstatus, editstatus}, "nextPumpTime")}}, [
-            h("input", {
-              type: "datetime-local",
-              value: formatDateTime_input(new Date(Date.parse(editstatus.nextPumpTime ?? serverstatus.nextPumpTime))),
-              min: formatDateTime_input(new Date()),
-              oninput: EditDate('nextPumpTime'),
-            }),
-          ]),
+        Fieldset("WiFi settings", [
+          InputField(state, "wifiMode", "Connection mode:", RadioList("wifiMode", [
+            {value: "OFF", label: "Off"},
+            {value: "STA", label: "Client"},
+            {value: "AP", label: "Hotspot"},
+          ])),
+          InputField(state, "wifiSsid", "SSID/name:", TextInput({disabled: isWiFiOff})),
+          InputField(state, "wifiPassword", "Password:", TextInput({disabled: isWiFiOff, placeholder: "**************"})),
+          InputField(state, "wifiHostname", "Device hostname:", TextInput({disabled: isWiFiOff})),
+        ]),
 
-          h("dt", {class: {modified: !hasDefaultValue({serverstatus, editstatus}, "pumpInterval")}}, text("Pump interval:")),
-          h("dd", {class: {modified: !hasDefaultValue({serverstatus, editstatus}, "pumpInterval")}}, [
-            h("input", {
-              type: "number",
-              value: (editstatus.pumpInterval ?? serverstatus.pumpInterval) / (24 * 3600),
-              min: "0.1",
-              max: "9.9",
-              step: "0.1",
-              oninput: EditNumber('pumpInterval', 24 * 3600),
-            }),
-            h("span", {}, text(" days")),
-          ]),
+        h("div", {class: "actions"}, [
+          h("button", {onclick: PrefsSave, disabled: disableInputs}, text("Save")),
+          h("button", {onclick: PrefsRestore, disabled: disableInputs}, text("Restore")),
+        ]),
 
-          h("dt", {class: {modified: !hasDefaultValue({serverstatus, editstatus}, "pumpDuration")}}, text("Pump duration:")),
-          h("dd", {class: {modified: !hasDefaultValue({serverstatus, editstatus}, "pumpDuration")}}, [
-            h("input", {
-              type: "number",
-              value: (editstatus.pumpDuration ?? serverstatus.pumpDuration) / 1000,
-              min: "0.1",
-              max: "9.9",
-              step: "0.1",
-              oninput: EditNumber('pumpDuration', 1000),
-            }),
-            h("span", {}, text(" s")),
-          ]),
-        ]), // </dl>
-      ]),
-
-      h("fieldset", {}, [
-        h("legend", {}, text("WiFi settings")),
-        h("dl", {}, [
-          h("dt", {class: {modified: !hasDefaultValue({serverstatus, editstatus}, "wifiMode")}}, text("Connection mode:")),
-          h("dd", {class: {modified: !hasDefaultValue({serverstatus, editstatus}, "wifiMode")}}, [
-            h("input", {
-              type: "radio",
-              name: "wifiMode",
-              id: "wifiSTA",
-              value: "STA",
-              checked: (editstatus.wifiMode ?? serverstatus.wifiMode) == "STA" && "checked",
-              oninput: EditText('wifiMode'),
-            }),
-            h("label", {for: "wifiSTA"}, text("Client ")),
-
-            h("br", {}, []),
-            h("input", {
-              type: "radio",
-              name: "wifiMode",
-              id: "wifiAP",
-              value: "AP",
-              checked: (editstatus.wifiMode ?? serverstatus.wifiMode) == "AP" && "checked",
-              oninput: EditText('wifiMode'),
-            }),
-            h("label", {for: "wifiAP"}, text("Hotspot")),
-
-            h("br", {}, []),
-            h("input", {
-              type: "radio",
-              name: "wifiMode",
-              id: "wifiOFF",
-              value: "OFF",
-              checked: (editstatus.wifiMode ?? serverstatus.wifiMode) == "OFF" && "checked",
-              oninput: EditText('wifiMode'),
-            }),
-            h("label", {for: "wifiOFF"}, text("Off")),
-          ]),
-
-          h("dt", {class: {modified: !hasDefaultValue({serverstatus, editstatus}, "wifiSsid")}}, text("SSID/name:")),
-          h("dd", {class: {modified: !hasDefaultValue({serverstatus, editstatus}, "wifiSsid")}}, [
-            h("input", {
-              type: "text",
-              value: editstatus.wifiSsid ?? serverstatus.wifiSsid,
-              oninput: EditText('wifiSsid'),
-              disabled: (editstatus.wifiMode ?? serverstatus.wifiMode) == "OFF",
-            }),
-          ]),
-
-          h("dt", {class: {modified: !hasDefaultValue({serverstatus, editstatus}, "wifiPassword")}}, text("Password:")),
-          h("dd", {class: {modified: !hasDefaultValue({serverstatus, editstatus}, "wifiPassword")}}, [
-            h("input", {
-              type: "password",
-              value: editstatus.wifiPassword ?? "",
-              placeholder: "**************",
-              oninput: EditText('wifiPassword'),
-              disabled: (editstatus.wifiMode ?? serverstatus.wifiMode) == "OFF",
-            }),
-          ]),
-
-          h("dt", {class: {modified: !hasDefaultValue({serverstatus, editstatus}, "wifiHostname")}}, text("Device hostname")),
-
-          h("dd", {class: {modified: !hasDefaultValue({serverstatus, editstatus}, "wifiHostname")}}, [
-            h("input", {
-              type: "text",
-              value: editstatus.wifiHostname ?? serverstatus.wifiHostname,
-              oninput: EditText('wifiHostname'),
-              disabled: (editstatus.wifiMode ?? serverstatus.wifiMode) == "OFF",
-            }),
-          ]),
-        ]), // </dl>
-      ]),
-
-      h("div", {class: "actions"}, [
-        h("button", {onclick: PrefsSave, disabled: disableInputs}, text("Save")),
-        h("button", {onclick: PrefsRestore, disabled: disableInputs}, text("Restore")),
-      ]),
-
-      ShowGraph(serverstatus),
-    ]), // </main>
+        ShowGraph(serverstatus),
+      ]), // </main> "prefs"
 
     ]); // outer div
   },
