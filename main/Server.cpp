@@ -5,9 +5,11 @@
 #include "PlantWaterOS.hpp"
 #include "Wifi.hpp"
 
+#include "HTTPUpdateServer.h"
+
 #include <WebServer.h>
+#include <WiFi.h>
 #include <Stream.h>
-#include <ElegantOTA.h>
 #include <SD.h>
 #include <Preferences.h>
 
@@ -15,6 +17,7 @@
 
 // Globals
 WebServer server(80);
+HTTPUpdateServer updateServer;
 
 extern const uint8_t static_index_html_start[]  asm("_binary_index_html_gz_start");
 extern const uint8_t static_index_html_end[]    asm("_binary_index_html_gz_end");
@@ -71,7 +74,7 @@ void initWebServer()
   server.on("/api/pump/reset", onHttpApiPumpReset);
   server.on("/prefs", HTTPMethod::HTTP_POST, onHttpApiPrefsPost);
 
-  ElegantOTA.begin(&server);
+  updateServer.setup(&server, "/update");
   server.begin();
 }
 
@@ -79,7 +82,6 @@ void handleServer(void* args)
 {
   while (true) {
     server.handleClient();
-    ElegantOTA.loop();
   }
 }
 

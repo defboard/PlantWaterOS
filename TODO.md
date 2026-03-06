@@ -9,7 +9,6 @@
 # Time
 
 - use internal time keeping
-
 - use RTC only once per day to synchronize
 - network based time synchronization as an alternative to RTC
 
@@ -34,7 +33,7 @@
 - make datetime exchange format more consistent (transfer as ISO8661, parse immediately)
 - more human-readable datetime display ("2 days ago"/...)
 
-- replace ElegantOTA by our own tool, additional tab
+- progress bar for firmware update
 
 - error reporting in WebUI according to server request status
 
