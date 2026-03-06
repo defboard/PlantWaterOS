@@ -1,15 +1,10 @@
 # general
 
-- Wifi: Fallback
-- Wifi: generate password based on chip id/...?
-
-- refine the sensordata logging logic
-
-- display:
+- display + buttons:
     - let user choose pumpDuration / pumpInterval / nextpumptime
 
-- event queue rework?
-
+- event queue rework/simplification?
+- webserver core
 
 # Time
 
@@ -18,52 +13,58 @@
 - use RTC only once per day to synchronize
 - network based time synchronization as an alternative to RTC
 
+# Network
+
+- Wifi: Fallback after N failed attempts -> previous wifi
+- Wifi: generate password based on chip id/...?
 
 # web UI
 
-- simplify table / input creation
-- async HTTP
-- https?
-
+- https
 - AUTH!
+
+- async HTTP
+
+- display moisture level in %
 
 - more frequent updates .. websockets?
 - graph... xaxis/yaxis
 
+- display missing datetimes as "n/a"
+- make datetime exchange format more consistent (transfer as ISO8661, parse immediately)
+- more human-readable datetime display ("2 days ago"/...)
+
+- replace ElegantOTA by our own tool, additional tab
+
+- error reporting in WebUI according to server request status
+
+- display firmware version (build date, commit)
 
 # Logging
 
+- logrotate + access to older logs
+- refine the sensordata logging logic -> smoother averaging
 - rework `fullSystemLog` into `eventLog` + last 100 sensor lines
 - binary sensor data log (?)
 
-
 # settings
-
-- sensor pin(s)
-- sensor log frequency
-- sensor log repeat count + delay
-
-- pump pin(s)
-- pump time
 
 - pump condition:
     - min/max time
     - min/max moisture level
     - day time
 
-- SPI pins (SD)
-- I2C pins (RTC, display)
+- time sync: RTC/network
+- current time
 
 - Display resolution
 - Button functionality
 
-- time sync: RTC/network
-- current time
+- sensor log frequency
+- sensor log repeat count + delay
 
+- sensor pin(s)
+- pump pin(s)
 
-# OTA
-
-- replace ElegantOTA by our own tool
-
-
-# Mobile App
+- SPI pins (SD)
+- I2C pins (RTC, display)
