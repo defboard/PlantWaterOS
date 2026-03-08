@@ -47,11 +47,6 @@ def index():
     return send_from_directory('.', 'index.html')
 
 
-@app.route("/update")
-def update():
-    return "Update page"
-
-
 @app.route("/style.css")
 def style():
     return send_from_directory('.', 'style.css')
@@ -167,6 +162,18 @@ def prefs():
         log("wifiHostname =", wifiHostname)
 
     return server_info()
+
+
+@app.route("/update", methods=['POST'])
+def upload():
+    data = request.form
+    log("upload...", data)
+    messages = ['Done!', 'Internal failure!']
+    code = random.choice(range(len(messages)))
+    return {
+        "code": code,
+        "message": messages[code],
+    }
 
 
 if __name__ == '__main__':

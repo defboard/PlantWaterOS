@@ -34,6 +34,10 @@ nav > div {
   cursor: pointer;
 }
 
+nav > div.disabled {
+  cursor: not-allowed;
+}
+
 nav > div.active {
   background-color: #bdb;
 }
@@ -108,6 +112,22 @@ dt.modified::after {
   visibility: visible;
 }
 
+dd progress {
+  width: 100%;
+}
+
+dt.success, dd.success {
+  background-color: #8e8;
+}
+
+dt.failure, dd.failure {
+  background-color: #ee8;
+}
+
+dt.error, dd.error {
+  background-color: #e88;
+}
+
 /* action buttons */
 
 .actions {
@@ -178,6 +198,15 @@ const updateRecursive = (a, b) => {
   return a;
 };
 
+
+const JSON_safeParse = (text) => {
+  try {
+    return JSON.parse(text) || {};
+  }
+  catch (e) {
+    return {};
+  }
+}
 
 // Local storage
 
@@ -280,8 +309,26 @@ const postRequest = (dispatch, [url, data, action]) => {
   .then(data => dispatch(action, data))
 };
 
+const uploadFile = (dispatch, [url, file, progressAction, finishAction]) => {
+  const request = new XMLHttpRequest();
+  request.open("POST", url);
+  request.upload.onprogress = (event) => dispatch(progressAction, event);
+  request.onreadystatechange = (event) => {
+    if (request.readyState == 4) {
+      dispatch(finishAction, event);
+    }
+  };
+  const form = new FormData();
+  form.append("file", file, file.name),
+  request.send(form);
+};
+
 const timeout = (dispatch, [delay, action]) => {
   setTimeout(() => dispatch(action), delay);
+};
+
+const reloadWindow = (dispatch) => {
+  window.location.reload();
 };
 
 const every = (dispatch, [delay, action]) => {
@@ -300,6 +347,7 @@ const adjustTime = (time, delta) => {
 // Events
 
 const DISABLE_TIMEOUT = 750;
+const RELOAD_TIMEOUT = 10_000;
 
 const GotServerStatus = (state, serverstatus) => {
   const serverTime = Date.parse(serverstatus.serverTime);
@@ -338,8 +386,15 @@ const UpdateUI = (state) => {
 
 const EnableInputs = (state) => storeLocal({...state, disableInputs: false});
 const DisableInputs = (state) => storeLocal({...state, disableInputs: true});
+const ReloadWindow = (state) => [state, reloadWindow];
 
-const ShowTab = (activeTab) => (state) => storeLocal({...state, activeTab});
+const ShowTab = (activeTab) => (state) => storeLocal({
+  ...state,
+  activeTab,
+  firmwareImage: undefined,
+  uploadProgress: undefined,
+  uploadResult: undefined,
+});
 
 const ActivatePump = (state, event) => ([
   DisableInputs(state),
@@ -358,6 +413,32 @@ const UpdateServerTime = (state, event) => {
   return [
     DisableInputs(state),
     [postRequest, ["api/server/time", data, GotServerStatus]],
+  ];
+};
+
+const UploadProgress = (state, event) => {
+  const uploadProgress = {
+    max: event.total,
+    value: event.loaded,
+  };
+  return { ...state, uploadProgress };
+};
+
+const UploadFinished = (state, event) => {
+  const query = event.target;
+  const { status, statusText } = query;
+  const response = JSON_safeParse(query.responseText);
+  const uploadResult = { status, statusText, ...response };
+  const success = uploadResult.status == 200 && uploadResult.code == 0;
+  const reloadTime = success ? Date.now() + RELOAD_TIMEOUT : undefined;
+  const effect = (
+    success
+    ? [timeout, [RELOAD_TIMEOUT, ReloadWindow]]
+    : [timeout, [DISABLE_TIMEOUT, EnableInputs]]
+  );
+  return [
+    { ...state, uploadResult, reloadTime },
+    effect,
   ];
 };
 
@@ -381,11 +462,24 @@ const PrefsSave = (state, event) => ([
 
 const PrefsRestore = (state) => storeLocal({...state, editstatus: {}});
 
+const UploadFirmware = (state) => ([
+  DisableInputs(state),
+  [uploadFile, ["update", state.firmwareImage, UploadProgress, UploadFinished]],
+]);
+
+
 const EditField = (key, parse) => (state, event) => storeLocal(SetEditField(state, key, parse(event.target.value)));
 
 const EditNumber = (key, multiplier) => EditField(key, (value) => Math.round(value * (multiplier ?? 1)));
 const EditText = (key) => EditField(key, (value) => value);
 const EditDate = (key) => EditField(key, (value) => parseDateTime_input(value));
+
+const EditFile = (key) => (state, event) => {
+  return storeLocal({
+    ...state,
+    firmwareImage: event.target.files.length == 1 && event.target.files[0],
+  });
+};
 
 
 // UI components
@@ -452,6 +546,15 @@ const RadioList = (name, items) => (key, value) => (
     (idx == items.length - 1) || h("br", {}, []),
   ])
 );
+
+const NavButton = (state, name, label) => {
+  const disabled = state.disableInputs;
+  const active = state.activeTab == name;
+  return h("div", {
+    onclick: !disabled && !active && ShowTab(name),
+    class: { active, disabled },
+  }, text(label));
+};
 
 
 // plotting
@@ -609,8 +712,9 @@ app({
       h("h1", {}, text("PlantWaterOS")),
 
       h("nav", {}, [
-        h("div", {onclick: ShowTab("status"), class: {active: activeTab == "status"}}, text("Status")),
-        h("div", {onclick: ShowTab("prefs"), class: {active: activeTab == "prefs"}}, text("Preferences")),
+        NavButton(state, "status", "Status"),
+        NavButton(state, "prefs", "Preferences"),
+        NavButton(state, "update", "Update"),
       ]),
 
       activeTab == "status" && h('main', {}, [
@@ -634,7 +738,6 @@ app({
         Fieldset("Links", [
           Field("System events:",      {}, HyperRef("file/events.log", "events.log")),
           Field("Logfile:",            {}, HyperRef("file/sensor.log", "sensor.log")),
-          Field("Update firmware:",    {}, HyperRef("update", "update")),
         ]),
 
         h("div", {class: "actions"}, [
@@ -678,6 +781,49 @@ app({
 
         ShowGraph(serverstatus),
       ]), // </main> "prefs"
+
+      activeTab == "update" && h('main', {}, [
+
+        Fieldset("Firmware", [
+          InputField(state, "firmwareImage", "Firmware image:", (key, value) => h("input", {
+            type: "file",
+            accept: ".bin,.bin.gz",
+            oninput: EditFile(key),
+          })),
+        ]),
+
+        (state.uploadProgress || state.uploadResult) &&
+        Fieldset("Upload", [
+          state.uploadProgress &&
+          Field("Progress:", {}, [
+            h("progress", state.uploadProgress),
+          ]),
+
+          state.uploadResult &&
+          Field("Message:", {class: {
+            success: state.uploadResult.status == 200 && state.uploadResult.code == 0,
+            error: state.uploadResult.status != 200,
+            failure: state.uploadResult.code > 0,
+          }}, [
+            text(state.uploadResult.message ?? state.uploadResult.statusText),
+          ]),
+        ]),
+
+        h("div", {class: "actions"}, [
+
+          !state.reloadTime &&
+          h("button", {
+            onclick: UploadFirmware,
+            disabled: disableInputs || !state.firmwareImage,
+          }, text("Upload firmware")),
+
+          state.reloadTime &&
+          h("button", {
+            onclick: ReloadWindow,
+          }, text(`Reload page (${Math.round((state.reloadTime - Date.now()) / 1000)}s)`)),
+        ]),
+
+      ]), // </main>
 
     ]); // outer div
   },

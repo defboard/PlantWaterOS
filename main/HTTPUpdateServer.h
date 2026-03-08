@@ -1,29 +1,12 @@
 #pragma once
 
+#include "Json.hpp"
+
 #include <StreamString.h>
 #include <Update.h>
 #include <WebServer.h>
 
 namespace {
-
-    static const char serverIndex[] =
-    R"(<!DOCTYPE html>
-        <html lang='en'>
-        <head>
-            <meta charset='utf-8'>
-            <meta name='viewport' content='width=device-width,initial-scale=1'/>
-        </head>
-        <body>
-        <form method='POST' action='' enctype='multipart/form-data'>
-            Firmware:<br>
-            <input type='file' accept='.bin,.bin.gz' name='firmware'>
-            <input type='submit' value='Update Firmware'>
-        </form>
-        </body>
-        </html>)";
-    static const char successResponse[] = "<META http-equiv=\"refresh\" content=\"15;URL=/\">Update Success! Rebooting...";
-
-
     uint32_t maxSketchSpace()
     {
       return (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
@@ -35,29 +18,34 @@ public:
 
   void setup(WebServer *server, const char* path)
   {
-    server->on(path, HTTP_GET,
-        [server]() { getHandler(server); });
-
     server->on(path, HTTP_POST,
         [server]() { finishHandler(server); },
         [server]() { uploadHandler(server); });
   }
 
-  static void getHandler(WebServer *server)
-  {
-    server->send(200, "text/html", serverIndex);
-  }
-
   static void finishHandler(WebServer *server)
   {
-    if (Update.hasError()) {
-      server->send(200, "text/html", String("Update error: ") + Update.errorString());
-      Update.clearError();
+    const bool hasError = !Update.hasError();
+    const int code = Update.getError();
+    const String message = hasError
+        ? Update.errorString()
+        : "Update successful! Rebooting...";
+    Update.clearError();
+
+    StreamString response;
+    JsonWriter json(response);
+    json.put_object();
+    json.put_plain("code", code);
+    json.put_string("message", message);
+    json.end_object();
+
+    if (hasError) {
+      server->send(200, "application/json", response);
       return;
     }
 
     server->client().setNoDelay(true);
-    server->send(200, "text/html", successResponse);
+    server->send(200, "application/json", response);
     delay(100);
     server->client().stop();
     ESP.restart();
