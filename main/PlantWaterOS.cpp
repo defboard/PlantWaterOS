@@ -49,6 +49,8 @@ int pumpDuration = 2000;
 
 const int delaySensorRepeat = 1000;   // [ms]
 
+const int SCREEN_TIMEOUT = 60;        // [s]
+
 // Native display width is W x H = 128 x 64:
 const int DISPLAY_WIDTH     = 128;  // OLED display width, in pixels
 const int DISPLAY_HEIGHT    = 64;   // OLED display height, in pixels
@@ -106,6 +108,7 @@ extern TaskHandle_t loopTaskHandle;
 
 
 // Forward declarations
+bool updateDisplay();
 bool handleButtons();
 void readSensor();
 void enablePump(bool enable);
@@ -216,6 +219,7 @@ void setup()
 int counter = 0;
 int screen = 0;
 int num_screens = 5;
+int screenTimeout = 0;
 int actionScreen = 0;
 int numActionScreens = 3;
 bool isActionScreenActive = false;
@@ -231,9 +235,19 @@ void loop()
   }
 
   bool anyButtonIsPressed = handleButtons();
+  if (anyButtonIsPressed) {
+    screenTimeout = SCREEN_TIMEOUT;
+  }
 
   if (counter % 100 == 0) {
     counter = 0;
+    if (screenTimeout >= 0) {
+      --screenTimeout;
+    }
+    if (screenTimeout == 0) {
+      screen = 0;
+      updateDisplay();
+    }
     sendMessage(MessageType::SensorRead);
     sendMessage(MessageType::ScreenRefresh);
 
