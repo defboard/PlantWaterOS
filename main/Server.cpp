@@ -8,7 +8,6 @@
 #include "HTTPUpdateServer.h"
 
 #include <WebServer.h>
-#include <WiFi.h>
 #include <Stream.h>
 #include <SD.h>
 #include <Preferences.h>
@@ -131,7 +130,6 @@ void onHttpApiStatus()
   json.put_object();
   json.put_string("serverTime", now);
   json.put_string("bootTime", bootTime);
-  json.put_string("localIP", WiFi.localIP());
   json.put_string("wifiMode", dumpWifiMode(WIFI_MODE));
   json.put_string("wifiSsid", WIFI_SSID);
   json.put_string("wifiHostname", WIFI_HOSTNAME);

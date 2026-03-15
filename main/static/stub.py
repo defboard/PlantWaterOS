@@ -71,7 +71,6 @@ def server_info():
     return {
         "serverTime": format_time(datetime.now()),
         "bootTime": format_time(state.bootTime),
-        "localIP": "{}:{}".format(*request.server),
         "prevPumpTime": format_time(state.prevPumpTime),
         "nextPumpTime": format_time(state.nextPumpTime),
         "pumpInterval": state.pumpInterval.total_seconds(),

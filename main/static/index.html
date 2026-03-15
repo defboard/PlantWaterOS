@@ -216,7 +216,6 @@ const initialState = {
   serverstatus: {
     serverTime: "",
     bootTime: "",
-    localIP: "",
     prevPumpTime: "",
     nextPumpTime: "",
     pumpInterval: "",
@@ -721,7 +720,6 @@ app({
         Fieldset("Host device", [
           Field("Server time:",        {}, text(formatDateTime_simple(displayedServerTime))),
           Field("Server boot time:",   {}, text(serverstatus.bootTime)),
-          Field("IP:",                 {}, text(serverstatus.localIP)),
         ]),
 
         Fieldset("Pump", [
