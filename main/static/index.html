@@ -720,6 +720,7 @@ app({
         Fieldset("Host device", [
           Field("Server time:",        {}, text(formatDateTime_simple(displayedServerTime))),
           Field("Server boot time:",   {}, text(serverstatus.bootTime)),
+          Field("System events:",      {}, HyperRef("file/events.log", "events.log")),
         ]),
 
         Fieldset("Pump", [
@@ -731,10 +732,6 @@ app({
         Fieldset("Sensor", [
           Field("Soil moisture:",      {}, text(serverstatus.sensorValue)),
           Field("Temperature:",        {}, text(parseFloat(serverstatus.temperature).toFixed(1) + "°C")),
-        ]),
-
-        Fieldset("Links", [
-          Field("System events:",      {}, HyperRef("file/events.log", "events.log")),
           Field("Logfile:",            {}, HyperRef("file/sensor.log", "sensor.log")),
         ]),
 
