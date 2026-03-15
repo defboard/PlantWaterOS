@@ -74,10 +74,20 @@ enum ActionType
 };
 
 
+struct DisplaySection {
+  int start_line, num_lines;
+  String content;
+
+  void write(const String& new_content);
+};
+
+
 // Globals
 RTC_DS3231 rtc;
 
 Adafruit_SSD1306 display(DISPLAY_WIDTH, DISPLAY_HEIGHT, &Wire, DISPLAY_RESET_PIN);
+DisplaySection contentArea { 1, 2, "" };
+DisplaySection notifyArea { 4, 1, "" };
 
 StreamString eventLog;
 LogFile logfile("/sensor.log", Serial);
@@ -114,7 +124,6 @@ void readSensor();
 void enablePump(bool enable);
 DateTime readNextPumpTime();
 void writeNextPumpTime(const DateTime& nextPumpTime);
-void clearDisplayLines(int firstLine, int num=1);
 void opMessageTask(void*);
 void onPumpStopTimer(TimerHandle_t);
 void _setSystemTime();
@@ -443,7 +452,7 @@ void readSensor()
 
 bool updateDisplay()
 {
-  clearDisplayLines(1, 2);
+  StreamString display;
   switch (screen) {
     case 0:
       // show black screen
@@ -465,7 +474,7 @@ bool updateDisplay()
       display << "Uptime: " << (now - bootTime) << endl;
       break;
   }
-  display.display();
+  contentArea.write(display);
   return true;
 }
 
@@ -512,9 +521,7 @@ void dispatchMessage(DeviceOperationMessage message)
       break;
 
     case MessageType::ScreenInfoLine:
-      clearDisplayLines(4);
-      display << ((const char*) message.data);
-      display.display();
+      notifyArea.write((const char*) message.data);
       break;
 
     case MessageType::ActionCyclePrev:
@@ -547,9 +554,7 @@ void dispatchMessage(DeviceOperationMessage message)
       logfile.open();
       eventLog << now << ": Pump event " << numPumpEvents << " (" << pumpDuration << "ms)" << endl;
 
-      clearDisplayLines(4);
-      display << "PUMPING...";
-      display.display();
+      notifyArea.write("PUMPING...");
 
       enablePump(true);
       break;
@@ -558,8 +563,7 @@ void dispatchMessage(DeviceOperationMessage message)
       enablePump(false);
       pumpIsStarted = false;
 
-      clearDisplayLines(4);
-      display.display();
+      notifyArea.write("");
       break;
 
     case MessageType::PumpTimerReset:
@@ -592,10 +596,15 @@ void opMessageTask(void* args)
   }
 }
 
-void clearDisplayLines(int line, int num)
+void DisplaySection::write(const String& new_content)
 {
-  display.fillRect(0, (line - 1) * LINE_HEIGHT, DISPLAY_WIDTH, LINE_HEIGHT * num, SSD1306_BLACK);
-  display.setCursor(1, (line - 1) * LINE_HEIGHT);
+  if (content != new_content) {
+    content = new_content;
+    display.fillRect(0, (start_line - 1) * LINE_HEIGHT, DISPLAY_WIDTH, LINE_HEIGHT * num_lines, SSD1306_BLACK);
+    display.setCursor(1, (start_line - 1) * LINE_HEIGHT);
+    display.print(content);
+    display.display();
+  }
 }
 
 
