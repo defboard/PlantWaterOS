@@ -149,6 +149,9 @@ void setup()
   pinMode(PIN_BTN_RIGHT, INPUT_PULLUP);
   // buttonMiddle.begin();
 
+  analogReadResolution(12);
+  analogSetAttenuation(ADC_11db);
+
   // Init RTC
   eventLog << "Init Wire: " << CheckSuccess(Wire.begin(PIN_RTC_SDA, PIN_RTC_SCL)) << endl;
   eventLog << "Init RTC: " << CheckSuccess(rtc.begin(&Wire)) << endl;
@@ -408,7 +411,7 @@ void writeNextPumpTime(const DateTime& nextPumpTime)
 void readSensor()
 {
   now = rtc.now();
-  sensorValue = analogRead(PIN_SENSOR);
+  sensorValue = analogReadMilliVolts(PIN_SENSOR);
   temperature.degreeCelsius = rtc.getTemperature();
 
   sensorRecordsA.push_back( SensorRecord { now.unixtime(), sensorValue } );
