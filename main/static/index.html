@@ -350,8 +350,8 @@ const RELOAD_TIMEOUT = 10_000;
 
 const GotServerStatus = (state, serverstatus) => {
   const serverTime = Date.parse(serverstatus.serverTime);
-  const requestTime = new Date();
-  const timeDelta = serverstatus.serverTime - requestTime;
+  const requestTime = new Date().valueOf();
+  const timeDelta = serverTime - requestTime;
   return [
     storeLocal({
       ...state,

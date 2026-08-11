@@ -69,8 +69,9 @@ def sensor_log():
 
 def server_info():
     return {
-        "serverTime": format_time(datetime.now()),
-        "bootTime": format_time(state.bootTime),
+        # Subtract one hour for testing correct display in client:
+        "serverTime": format_time(datetime.now() - timedelta(seconds=3600)),
+        "bootTime": format_time(state.bootTime - timedelta(seconds=3600)),
         "prevPumpTime": format_time(state.prevPumpTime),
         "nextPumpTime": format_time(state.nextPumpTime),
         "pumpInterval": state.pumpInterval.total_seconds(),
