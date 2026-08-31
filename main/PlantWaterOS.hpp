@@ -43,8 +43,6 @@ extern StreamString eventLog;
 extern const TimeSpan firstPumpDelay;
 extern const TimeSpan logInterval;
 
-extern DateTime now;
-extern DateTime bootTime;
 extern DateTime nextLogTime;
 extern DateTime prevPumpTime;
 extern DateTime nextPumpTime;
@@ -68,5 +66,7 @@ extern int32_t getPumpInterval();
 extern bool setPumpInterval(Preferences& prefs, int32_t interval);
 
 extern bool setSystemTime(DateTime systemTime);
+extern DateTime now();
+extern DateTime getBootTime();
 
 extern bool setNextPumpTime(DateTime pumpTime);

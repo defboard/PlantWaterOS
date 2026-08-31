@@ -92,8 +92,6 @@ DisplaySection notifyArea { 4, 1, "" };
 StreamString eventLog;
 LogFile logfile("/sensor.log", Serial);
 
-DateTime now;
-DateTime bootTime;
 DateTime prevPumpTime;
 DateTime nextPumpTime;
 
@@ -126,7 +124,7 @@ DateTime readNextPumpTime();
 void writeNextPumpTime(const DateTime& nextPumpTime);
 void opMessageTask(void*);
 void onPumpStopTimer(TimerHandle_t);
-void _setSystemTime();
+bool _setSystemTime(DateTime newTime, bool adjustRtc);
 void _setNextPumpTime();
 
 
@@ -168,7 +166,8 @@ void setup()
   eventLog << "SDCard Size: " << cardSize << "MB" << endl;
 
   // Init boot time
-  bootTime = rtc.now();
+  _setSystemTime(rtc.now(), false);
+  const DateTime bootTime = getBootTime();
   logfile.open();
   logfile << bootTime << ": system booted - "
     << (rtc.lostPower()
@@ -264,7 +263,7 @@ void loop()
     sendMessage(MessageType::ScreenRefresh);
 
     if (not anyButtonIsPressed) {
-      if (now >= nextPumpTime) {
+      if (now() >= nextPumpTime) {
         sendMessage(MessageType::PumpStart);
       }
     }
@@ -410,11 +409,10 @@ void writeNextPumpTime(const DateTime& nextPumpTime)
 
 void readSensor()
 {
-  now = rtc.now();
   sensorValue = analogReadMilliVolts(PIN_SENSOR);
   temperature.degreeCelsius = rtc.getTemperature();
 
-  sensorRecordsA.push_back( SensorRecord { now.unixtime(), sensorValue } );
+  sensorRecordsA.push_back( SensorRecord { now().unixtime(), sensorValue } );
 
   if (sensorRecordsA.pos() == 0) {
     // Compute median over first sensorRecordsA (i.e. short term log):
@@ -444,7 +442,7 @@ void readSensor()
     // Log first median:
     if (sensorRecordsB.pos() == 1) {
       logfile.open();
-      logfile << now << ": " << temperature
+      logfile << now() << ": " << temperature
         << " " << q25.value
         << " " << q50.value
         << " " << q75.value
@@ -462,19 +460,19 @@ bool updateDisplay()
       break;
     case 1:
       display << "- Plant Water OS -" << endl;
-      display << now << endl;
+      display << now() << endl;
       break;
     case 2:
       display << "Soil moisture: " << sensorValue << endl;
       display << "Temperature: " << temperature << endl;
       break;
     case 3:
-      display << "Next pouring: " << (nextPumpTime - now) << endl;
+      display << "Next pouring: " << (nextPumpTime - now()) << endl;
       display << "Total pourings: " << numPumpEvents << endl;
       break;
     case 4:
       display << "IP: " << WiFi.localIP() << endl;
-      display << "Uptime: " << (now - bootTime) << endl;
+      display << "Uptime: " << (now() - getBootTime()) << endl;
       break;
   }
   contentArea.write(display);
@@ -502,6 +500,8 @@ int wrapRange(int num, int range_min, int range_max)
   }
   return num;
 }
+
+DateTime _newSystemTime;
 
 void dispatchMessage(DeviceOperationMessage message)
 {
@@ -548,14 +548,13 @@ void dispatchMessage(DeviceOperationMessage message)
         break;
       }
 
-      now = rtc.now();
-      prevPumpTime = now;
-      nextPumpTime = now + pumpInterval;
+      prevPumpTime = now();
+      nextPumpTime = prevPumpTime + pumpInterval;
       writeNextPumpTime(nextPumpTime);
 
       numPumpEvents += 1;
       logfile.open();
-      eventLog << now << ": Pump event " << numPumpEvents << " (" << pumpDuration << "ms)" << endl;
+      eventLog << prevPumpTime << ": Pump event " << numPumpEvents << " (" << pumpDuration << "ms)" << endl;
 
       notifyArea.write("PUMPING...");
 
@@ -570,8 +569,7 @@ void dispatchMessage(DeviceOperationMessage message)
       break;
 
     case MessageType::PumpTimerReset:
-      now = rtc.now();
-      nextPumpTime = now + firstPumpDelay;
+      nextPumpTime = now() + firstPumpDelay;
       writeNextPumpTime(nextPumpTime);
       break;
 
@@ -580,7 +578,7 @@ void dispatchMessage(DeviceOperationMessage message)
       break;
 
     case MessageType::SetSystemTime:
-      _setSystemTime();
+      _setSystemTime(_newSystemTime, true);
       break;
 
     case MessageType::SetNextPumpTime:
@@ -654,7 +652,18 @@ bool setPumpInterval(Preferences& prefs, int32_t seconds)
   return prefs.putLong("pump-interval", seconds);
 }
 
-DateTime _newSystemTime;
+DateTime now()
+{
+    uint32_t unixtime = time(NULL);
+    return DateTime(unixtime);
+}
+
+DateTime getBootTime()
+{
+    uint32_t unixtime = time(NULL);
+    uint64_t uptime = esp_timer_get_time() / 1'000'000;
+    return DateTime(unixtime - uptime);
+}
 
 bool setSystemTime(DateTime systemTime)
 {
@@ -666,22 +675,26 @@ bool setSystemTime(DateTime systemTime)
   return false;
 }
 
-void _setSystemTime()
+bool _setSystemTime(DateTime newTime, bool adjustRtc)
 {
-  now = rtc.now();
-
-  const TimeSpan delta = _newSystemTime - now;
+  if (not newTime.isValid()) {
+    return false;
+  }
+  const TimeSpan delta = newTime - now();
   if (delta.totalseconds() == 0) {
-    return;
+    return true;
   }
 
-  now = now + delta;
-  bootTime = bootTime + delta;
-  prevPumpTime = prevPumpTime + delta;
-  nextPumpTime = nextPumpTime + delta;
+  timeval tv;
+  tv.tv_sec = newTime.unixtime();
+  tv.tv_usec = 0;
 
-  rtc.adjust(now);
-  writeNextPumpTime(nextPumpTime);
+  bool success = settimeofday(&tv, NULL) == 0;
+
+  if (success and adjustRtc) {
+    rtc.adjust(newTime);
+  }
+  return success;
 }
 
 DateTime _newPumpTime;

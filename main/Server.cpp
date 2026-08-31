@@ -128,8 +128,8 @@ void onHttpApiStatus()
   JsonWriter json(response);
 
   json.put_object();
-  json.put_string("serverTime", now);
-  json.put_string("bootTime", bootTime);
+  json.put_string("serverTime", now());
+  json.put_string("bootTime", getBootTime());
   json.put_string("wifiMode", dumpWifiMode(WIFI_MODE));
   json.put_string("wifiSsid", WIFI_SSID);
   json.put_string("wifiHostname", WIFI_HOSTNAME);
@@ -193,7 +193,7 @@ void onHttpApiPrefsPost()
   if (server.hasArg("nextPumpTime")) {
     String timeArg = server.arg("nextPumpTime");
     DateTime newPumpTime(timeArg.c_str());     // ISO 8601 format
-    if (newPumpTime != now) {
+    if (newPumpTime != now()) {
       setNextPumpTime(newPumpTime);
     }
   }
