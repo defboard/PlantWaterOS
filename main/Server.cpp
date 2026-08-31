@@ -191,10 +191,10 @@ void onHttpApiPrefsPost()
 
   // Pump settings
   if (server.hasArg("nextPumpTime")) {
-    String serverTime = server.arg("nextPumpTime");
-    DateTime newServerTime(serverTime.c_str());     // ISO 8601 format
-    if (newServerTime != now) {
-      setNextPumpTime(newServerTime);
+    String timeArg = server.arg("nextPumpTime");
+    DateTime newPumpTime(timeArg.c_str());     // ISO 8601 format
+    if (newPumpTime != now) {
+      setNextPumpTime(newPumpTime);
     }
   }
 
