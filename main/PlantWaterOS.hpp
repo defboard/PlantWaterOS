@@ -55,7 +55,7 @@ extern int sensorValue;
 extern Temperature temperature;
 
 
-bool sendMessage(
+extern bool sendMessage(
     MessageType type,
     const void* data=nullptr,
     TickType_t waitTime=portMAX_DELAY);
