@@ -71,7 +71,7 @@ def server_info():
     return {
         # Subtract one hour for testing correct display in client:
         "serverTime": format_time(datetime.now() - timedelta(seconds=3600)),
-        "bootTime": format_time(state.bootTime - timedelta(seconds=3600)),
+        "uptime": int((datetime.now() - state.bootTime).total_seconds()),
         "prevPumpTime": format_time(state.prevPumpTime),
         "nextPumpTime": format_time(state.nextPumpTime),
         "pumpInterval": state.pumpInterval.total_seconds(),

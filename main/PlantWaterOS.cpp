@@ -167,7 +167,7 @@ void setup()
 
   // Init boot time
   _setSystemTime(rtc.now(), false);
-  const DateTime bootTime = getBootTime();
+  const DateTime bootTime = now() - uptime();
   logfile.open();
   logfile << bootTime << ": system booted - "
     << (rtc.lostPower()
@@ -472,7 +472,7 @@ bool updateDisplay()
       break;
     case 4:
       display << "IP: " << WiFi.localIP() << endl;
-      display << "Uptime: " << (now() - getBootTime()) << endl;
+      display << "Uptime: " << uptime() << endl;
       break;
   }
   contentArea.write(display);
@@ -658,11 +658,10 @@ DateTime now()
     return DateTime(unixtime);
 }
 
-DateTime getBootTime()
+TimeSpan uptime()
 {
-    uint32_t unixtime = time(NULL);
     uint64_t uptime = esp_timer_get_time() / 1'000'000;
-    return DateTime(unixtime - uptime);
+    return TimeSpan(uptime);
 }
 
 bool setSystemTime(DateTime systemTime)

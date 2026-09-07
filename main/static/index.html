@@ -215,7 +215,7 @@ const savedState = JSON.parse(localStorage.getItem(storageKey) || "{}");
 const initialState = {
   serverstatus: {
     serverTime: "",
-    bootTime: "",
+    uptime: "",
     prevPumpTime: "",
     nextPumpTime: "",
     pumpInterval: "",
@@ -291,6 +291,17 @@ const parseDateTime_input = (d) => {
 const DAYS_TO_SECONDS = 24 * 3600;
 const SECONDS_TO_MILLIS = 1000;
 
+const formatTimeSpan_simple = (t) => {
+  if (!t) {
+    return "n/a";
+  }
+  const days = Math.floor(t / DAYS_TO_SECONDS);
+  const hours = Math.floor(t / 3600) % 24;
+  const minutes = Math.floor(t / 60) % 60;
+  const seconds = Math.floor(t) % 60;
+  return `${days}d ${hours}h ${minutes}m ${seconds}s`;
+};
+
 // Effects
 
 const fetchJson = (dispatch, [url, action]) => {
@@ -351,12 +362,11 @@ const RELOAD_TIMEOUT = 10_000;
 const GotServerStatus = (state, serverstatus) => {
   const serverTime = Date.parse(serverstatus.serverTime);
   const requestTime = new Date().valueOf();
-  const timeDelta = serverTime - requestTime;
   return [
     storeLocal({
       ...state,
-      requestTime: requestTime,
-      timeDelta: timeDelta,
+      serverTime,
+      requestTime,
       serverstatus: {
         ...state.serverstatus,
         ...serverstatus,
@@ -370,16 +380,18 @@ const GotServerStatus = (state, serverstatus) => {
 // Actions
 
 const UpdateUI = (state) => {
-  const clientTime = new Date();
-  const displayedServerTime = adjustTime(clientTime, state.timeDelta);
+  const clientTime = new Date().valueOf();
+  const elapsedTime = clientTime - state.requestTime;
+  const adjustedServerTime = adjustTime(state.serverTime, elapsedTime);
+  const adjustedUptime = state.serverstatus.uptime + elapsedTime / SECONDS_TO_MILLIS;
   const editstatus = Object.fromEntries(Object.entries(state.editstatus).filter(
     ([key, value]) => (value != state.serverstatus[key]),
   ));
   return {
     ...state,
     editstatus,
-    clientTime,
-    displayedServerTime,
+    adjustedServerTime,
+    adjustedUptime,
   };
 }
 
@@ -704,7 +716,7 @@ app({
   ],
 
   view: (state) => {
-    const {serverstatus, displayedServerTime, activeTab, disableInputs, editstatus} = state;
+    const {serverstatus, activeTab, disableInputs, editstatus} = state;
     const isWiFiOff = (editstatus.wifiMode ?? serverstatus.wifiMode) == "OFF";
 
     return h("div", {}, [
@@ -718,8 +730,8 @@ app({
 
       activeTab == "status" && h('main', {}, [
         Fieldset("Host device", [
-          Field("Server time:",        {}, text(formatDateTime_simple(displayedServerTime))),
-          Field("Server boot time:",   {}, text(serverstatus.bootTime)),
+          Field("Server time:",        {}, text(formatDateTime_simple(state.adjustedServerTime))),
+          Field("Server uptime:",      {}, text(formatTimeSpan_simple(state.adjustedUptime))),
           Field("System events:",      {}, HyperRef("file/events.log", "events.log")),
         ]),
 
@@ -747,7 +759,7 @@ app({
 
         Fieldset("System settings", [
           Field("Server time", {}, [
-            h("span", {}, text(formatDateTime_simple(displayedServerTime))),
+            h("span", {}, text(formatDateTime_simple(state.adjustedServerTime))),
             h("button", {onclick: UpdateServerTime}, text("🗘")),
           ]),
         ]),

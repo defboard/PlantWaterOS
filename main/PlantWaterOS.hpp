@@ -67,6 +67,6 @@ extern bool setPumpInterval(Preferences& prefs, int32_t interval);
 
 extern bool setSystemTime(DateTime systemTime);
 extern DateTime now();
-extern DateTime getBootTime();
+extern TimeSpan uptime();
 
 extern bool setNextPumpTime(DateTime pumpTime);

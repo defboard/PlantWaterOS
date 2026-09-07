@@ -129,7 +129,7 @@ void onHttpApiStatus()
 
   json.put_object();
   json.put_string("serverTime", now());
-  json.put_string("bootTime", getBootTime());
+  json.put_plain("uptime", uptime().totalseconds());
   json.put_string("wifiMode", dumpWifiMode(WIFI_MODE));
   json.put_string("wifiSsid", WIFI_SSID);
   json.put_string("wifiHostname", WIFI_HOSTNAME);
