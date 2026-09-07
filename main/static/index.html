@@ -242,6 +242,8 @@ const storeLocal = (state) => {
   localStorage.setItem(storageKey, JSON.stringify({
     activeTab: state.activeTab,
     serverstatus: state.serverstatus,
+    serverTime: state.serverTime,
+    requestTime: state.requestTime,
   }));
   return UpdateUI(state);
 };
