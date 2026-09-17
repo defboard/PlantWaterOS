@@ -40,12 +40,12 @@ public:
     json.end_object();
 
     if (hasError) {
-      server->send(200, "application/json", response);
+      server->send(200, "application/json", (String&) response);
       return;
     }
 
     server->client().setNoDelay(true);
-    server->send(200, "application/json", response);
+    server->send(200, "application/json", (String&) response);
     delay(100);
     server->client().stop();
     ESP.restart();

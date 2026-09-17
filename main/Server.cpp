@@ -106,7 +106,7 @@ void onHttpHyperappJs()
 
 void onHttpFileEventsLog()
 {
-  server.send(200, "text/plain", eventLog);
+  server.send(200, "text/plain", (String&) eventLog);
 }
 
 void onHttpFileSensorLog()
@@ -150,7 +150,7 @@ void onHttpApiStatus()
   json.put_string("temperature", temperature);
   json.end_object();
 
-  server.send(200, "application/json", response);
+  server.send(200, "application/json", (String&) response);
 }
 
 void onHttpApiServerReboot()
