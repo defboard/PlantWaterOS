@@ -81,9 +81,7 @@ inline Print& operator<< (Print& out, TimeSpan timespan)
 
 inline Print& operator<< (Print& out, Temperature temperature)
 {
-  return out
-      << (int)(temperature.degreeCelsius)           << '.'
-      << (int)(temperature.degreeCelsius * 10) % 10 << 'C';
+  return out << temperature.degreeCelsius << 'C';
 }
 
 inline Print& operator<< (Print& out, SensorRecord record)

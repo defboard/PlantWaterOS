@@ -1,5 +1,5 @@
 idf_component_register(
-    SRCS "PlantWaterOS.cpp" "Wifi.cpp" "Server.cpp"
+    SRCS "PlantWaterOS.cpp" "Wifi.cpp" "Server.cpp" "Temperature.cpp"
     INCLUDE_DIRS "."
     REQUIRES RTClib Adafruit_SSD1306 arduino-esp32
     EMBED_FILES

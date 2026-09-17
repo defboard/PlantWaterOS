@@ -11,7 +11,7 @@ static_assert(sizeof(PREFS_NAMESPACE) <= 16);
 
 
 struct Temperature {
-  int degreeCelsius;
+  float degreeCelsius;
 };
 
 enum class MessageType {

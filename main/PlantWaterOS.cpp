@@ -4,8 +4,9 @@
 #include "Button.hpp"
 #include "Formatting.hpp"
 #include "LogFile.hpp"
-#include "Wifi.hpp"
 #include "Server.hpp"
+#include "Temperature.hpp"
+#include "Wifi.hpp"
 
 // Builtin libraries
 #include <freertos/FreeRTOS.h>
@@ -39,6 +40,8 @@ const int PIN_ENABLE_PUMP   = 27;
 const int PIN_BTN_LEFT      = 13;
 const int PIN_BTN_MIDDLE    = 12;
 const int PIN_BTN_RIGHT     = 14;
+
+const int PIN_DS18B20       = 33;
 
 // Configuration
 const int SERIAL_BAUD_RATE = 115200;
@@ -97,6 +100,7 @@ DateTime nextPumpTime;
 
 int numPumpEvents = 0;
 
+bool has_ds18b20 = false;
 int sensorValue = 0;
 Temperature temperature;
 RingBuffer<SensorRecord, 30> sensorRecordsA;
@@ -197,6 +201,10 @@ void setup()
     nextPumpTime = bootTime + firstPumpDelay;
     writeNextPumpTime(nextPumpTime);
   }
+
+  // Init ds18b20 temperature sensor:
+  has_ds18b20 = ds18b20_init(PIN_DS18B20);
+  eventLog << "Init DS18B20: " << CheckSuccess(has_ds18b20) << endl;
 
   if (digitalRead(PIN_BTN_MIDDLE) == HIGH)
   {
@@ -410,7 +418,9 @@ void writeNextPumpTime(const DateTime& nextPumpTime)
 void readSensor()
 {
   sensorValue = analogReadMilliVolts(PIN_SENSOR);
-  temperature.degreeCelsius = rtc.getTemperature();
+  if (not has_ds18b20 or not ds18b20_read(temperature.degreeCelsius)) {
+    temperature.degreeCelsius = rtc.getTemperature();
+  }
 
   sensorRecordsA.push_back( SensorRecord { now().unixtime(), sensorValue } );
 
