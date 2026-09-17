@@ -499,6 +499,12 @@ CONFIG_ARDUHAL_PARTITION_SCHEME="default"
 # end of Arduino Configuration
 
 #
+# DS18B20 Configuration
+#
+# CONFIG_DS18B20_SENSOR_HUB is not set
+# end of DS18B20 Configuration
+
+#
 # ESP RainMaker Config
 #
 CONFIG_ESP_RMAKER_NO_CLAIM=y

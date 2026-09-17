@@ -2,3 +2,7 @@ dependencies:
   espressif/arduino-esp32:
     pre_release: true
     version: '*'
+  espressif/ds18b20:
+    version: '*'
+  espressif/onewire_bus:
+    version: '*'

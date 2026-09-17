@@ -194,6 +194,23 @@ dependencies:
       registry_url: https://components.espressif.com
       type: service
     version: 0.6.1~4
+  espressif/ds18b20:
+    component_hash: 38022d0c39c08b1df3e77f95a3f9544251549a1fd9b6263357bf714026f4bb6b
+    dependencies:
+    - name: espressif/onewire_bus
+      registry_url: https://components.espressif.com
+      require: private
+      version: ^1.1.0
+    - matches:
+      - if: $CONFIG{DS18B20_SENSOR_HUB} == True
+      name: espressif/sensor_hub
+      registry_url: https://components.espressif.com
+      require: public
+      version: ^0.1.4
+    source:
+      registry_url: https://components.espressif.com/
+      type: service
+    version: 0.4.0
   espressif/esp-dsp:
     component_hash: ed9ac175b14e0414399a2b33c525579414b5bad19a2a67b12ea212def96f9a98
     dependencies:
@@ -473,6 +490,16 @@ dependencies:
       registry_url: https://components.espressif.com
       type: service
     version: 1.0.2
+  espressif/onewire_bus:
+    component_hash: dcce4fb1c2fc43c3d02de1cc9abdf062127468a785578723696de3817c526f99
+    dependencies:
+    - name: idf
+      require: private
+      version: '>=5.0'
+    source:
+      registry_url: https://components.espressif.com/
+      type: service
+    version: 1.1.2
   espressif/qrcode:
     component_hash: 3b493771bc5d6ad30cbf87c25bf784aada8a08c941504355b55d6b75518ed7bc
     dependencies: []
@@ -503,6 +530,8 @@ dependencies:
     version: 1.22.3
 direct_dependencies:
 - espressif/arduino-esp32
-manifest_hash: 5b4524ecb7330caba405fc933ed73c09285897f2c02ad54d7be89f2a44947693
+- espressif/ds18b20
+- espressif/onewire_bus
+manifest_hash: 1a698236b281d935d32da5642a11f0700eaefd433258557f110612796307eb52
 target: esp32
 version: 2.0.0
