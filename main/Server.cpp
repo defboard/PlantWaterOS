@@ -128,26 +128,28 @@ void onHttpApiStatus()
   JsonWriter json(response);
 
   json.put_object();
+
   json.put_string("serverTime", now());
   json.put_plain("uptime", uptime().totalseconds());
+
   json.put_string("wifiMode", dumpWifiMode(WIFI_MODE));
   json.put_string("wifiSsid", WIFI_SSID);
   json.put_string("wifiHostname", WIFI_HOSTNAME);
+
   json.put_string("prevPumpTime", prevPumpTime);
   json.put_string("nextPumpTime", nextPumpTime);
   json.put_string("pumpInterval", getPumpInterval());
-
   json.put_plain("pumpDuration", getPumpDuration());
   json.put_plain("numPumpEvents", numPumpEvents);
-  json.put_plain("sensorValue", sensorValue);
 
+  json.put_string("temperature", temperature);
+  json.put_plain("sensorValue", sensorValue);
   json.put_array("sensorData");
   for (const SensorRecord& record : sensorRecordsC) { json.put_plain(record); }
   for (const SensorRecord& record : sensorRecordsB) { json.put_plain(record); }
   for (const SensorRecord& record : sensorRecordsA) { json.put_plain(record); }
   json.end_array();
 
-  json.put_string("temperature", temperature);
   json.end_object();
 
   server.send(200, "application/json", (String&) response);
