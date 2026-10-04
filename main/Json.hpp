@@ -98,21 +98,21 @@ public:
     _comma = true;
   }
 
-  template <class V>
-  void put_string(const V& value)
+  template <class ...V>
+  void put_string(const V&... value)
   {
     _put_comma();
     _comma = true;
     JsonStringWriter w(_p);
-    w << value;
+    (w << ... << value);
   }
 
-  template <class V>
-  void put_plain(const V& value)
+  template <class ...V>
+  void put_plain(const V&... value)
   {
     _put_comma();
     _comma = true;
-    _p << value;
+    (_p << ... << value);
   }
 
   void put_bool(bool value)
@@ -142,43 +142,45 @@ public:
     _comma = false;
   }
 
+  // Assign values to given keys:
+
   template <class K>
-  void put_object(const K& key)
+  void assign_object(const K& key)
   {
     put_key(key);
     put_object();
   }
 
   template <class K>
-  void put_array(const K& key)
+  void assign_array(const K& key)
   {
     put_key(key);
     put_array();
   }
 
-  template <class K, class V>
-  inline void put_string(const K& key, const V& value)
+  template <class K, class ...V>
+  inline void assign_string(const K& key, const V&... value)
   {
     put_key(key);
-    put_string(value);
+    put_string(value...);
   }
 
-  template <class K, class V>
-  inline void put_plain(const K& key, const V& value)
+  template <class K, class ...V>
+  inline void assign_plain(const K& key, const V&... value)
   {
     put_key(key);
-    put_plain(value);
+    put_plain(value...);
   }
 
   template <class K>
-  inline void put_bool(const K& key, bool value)
+  inline void assign_bool(const K& key, bool value)
   {
     put_key(key);
     put_bool(value);
   }
 
   template <class K>
-  inline void put_null(const K& key)
+  inline void assign_null(const K& key)
   {
     put_key(key);
     put_null();

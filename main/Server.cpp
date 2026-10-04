@@ -129,22 +129,22 @@ void onHttpApiStatus()
 
   json.put_object();
 
-  json.put_string("serverTime", now());
-  json.put_plain("uptime", uptime().totalseconds());
+  json.assign_string("serverTime", now());
+  json.assign_plain("uptime", uptime().totalseconds());
 
-  json.put_string("wifiMode", dumpWifiMode(WIFI_MODE));
-  json.put_string("wifiSsid", WIFI_SSID);
-  json.put_string("wifiHostname", WIFI_HOSTNAME);
+  json.assign_string("wifiMode", dumpWifiMode(WIFI_MODE));
+  json.assign_string("wifiSsid", WIFI_SSID);
+  json.assign_string("wifiHostname", WIFI_HOSTNAME);
 
-  json.put_string("prevPumpTime", prevPumpTime);
-  json.put_string("nextPumpTime", nextPumpTime);
-  json.put_string("pumpInterval", getPumpInterval());
-  json.put_plain("pumpDuration", getPumpDuration());
-  json.put_plain("numPumpEvents", numPumpEvents);
+  json.assign_string("prevPumpTime", prevPumpTime);
+  json.assign_string("nextPumpTime", nextPumpTime);
+  json.assign_string("pumpInterval", getPumpInterval());
+  json.assign_plain("pumpDuration", getPumpDuration());
+  json.assign_plain("numPumpEvents", numPumpEvents);
 
-  json.put_string("temperature", temperature);
-  json.put_plain("sensorValue", sensorValue);
-  json.put_array("sensorData");
+  json.assign_string("temperature", temperature);
+  json.assign_plain("sensorValue", sensorValue);
+  json.assign_array("sensorData");
   for (const SensorRecord& record : sensorRecordsC) { json.put_plain(record); }
   for (const SensorRecord& record : sensorRecordsB) { json.put_plain(record); }
   for (const SensorRecord& record : sensorRecordsA) { json.put_plain(record); }

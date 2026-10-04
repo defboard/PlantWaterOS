@@ -35,8 +35,8 @@ public:
     StreamString response;
     JsonWriter json(response);
     json.put_object();
-    json.put_plain("code", code);
-    json.put_string("message", message);
+    json.assign_plain("code", code);
+    json.assign_string("message", message);
     json.end_object();
 
     if (hasError) {
