@@ -794,6 +794,11 @@ app({
       activeTab == "update" && h('main', {}, [
 
         Fieldset("Firmware", [
+          Field("Project:",   {}, text(serverstatus.project)),
+          Field("Version:",   {}, text(serverstatus.version)),
+          Field("Build:",     {}, text(serverstatus.build)),
+          Field("ESP-IDF:",   {}, text(serverstatus.idf)),
+
           InputField(state, "firmwareImage", "Firmware image:", (key, value) => h("input", {
             type: "file",
             accept: ".bin,.bin.gz",

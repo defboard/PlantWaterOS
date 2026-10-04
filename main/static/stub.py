@@ -5,13 +5,23 @@ from types import SimpleNamespace
 from io import StringIO
 import json
 import random
+import subprocess
 
 app = Flask(__name__)
 
 with open('serverstatus.json') as f:
     example = json.load(f)
 
+build_date = subprocess.run(
+    ["git", "log", "-1", "--format=%cd"],
+    capture_output=True,
+    encoding="utf-8")
+
 state = SimpleNamespace()
+state.project = "PlantWaterOS"
+state.version = "unknown"
+state.build = build_date.stdout.strip()
+state.idf = "6.1"
 state.bootTime = datetime.now()
 state.pumpInterval = timedelta(3)
 state.pumpDuration = 2000
@@ -70,6 +80,10 @@ def sensor_log():
 def server_info():
     return {
         # Subtract one hour for testing correct display in client:
+        "project": state.project,
+        "version": state.version,
+        "build": state.build,
+        "idf": state.idf,
         "serverTime": format_time(datetime.now() - timedelta(seconds=3600)),
         "uptime": int((datetime.now() - state.bootTime).total_seconds()),
         "prevPumpTime": format_time(state.prevPumpTime),

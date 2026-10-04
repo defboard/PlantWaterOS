@@ -12,6 +12,8 @@
 #include <SD.h>
 #include <Preferences.h>
 
+#include "esp_app_desc.h"
+
 #include <optional>
 
 // Globals
@@ -128,6 +130,12 @@ void onHttpApiStatus()
   JsonWriter json(response);
 
   json.put_object();
+
+  const esp_app_desc_t* appInfo = esp_app_get_description();
+  json.assign_string("project", appInfo->project_name);
+  json.assign_string("version", appInfo->version);
+  json.assign_string("build", appInfo->date, ' ', appInfo->time);
+  json.assign_string("idf", appInfo->idf_ver);
 
   json.assign_string("serverTime", now());
   json.assign_plain("uptime", uptime().totalseconds());
