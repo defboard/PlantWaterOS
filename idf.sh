@@ -1,6 +1,6 @@
 #! /usr/bin/env bash
 
-VERSION=v5.5
+VERSION=v6.1
 
 # Not using `-u $UID` for now, because it doesn't work as well with --device:
 options=(--rm -v "$PWD:/project" -w /project)
