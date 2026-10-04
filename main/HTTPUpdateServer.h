@@ -48,7 +48,7 @@ public:
     server->send(200, "application/json", (String&) response);
     delay(100);
     server->client().stop();
-    ESP.restart();
+    esp_restart();
   }
 
   static void uploadHandler(WebServer* server)
