@@ -10,7 +10,7 @@ if [[ -e /dev/ttyUSB0 ]]; then
 fi
 
 if [[ $# -gt 0 ]]; then
-    docker run "${options[@]}" -it espressif/idf:$VERSION idf.py "$@"
+    podman run "${options[@]}" -it docker.io/espressif/idf:$VERSION idf.py "$@"
 else
-    docker run "${options[@]}" -it espressif/idf:$VERSION
+    podman run "${options[@]}" -it docker.io/espressif/idf:$VERSION
 fi
