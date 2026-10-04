@@ -165,8 +165,10 @@ void onHttpApiStatus()
 
 void onHttpApiServerReboot()
 {
+  server.client().setNoDelay(true);
   server.send(200, "application/json", "{}");
   delay(100);
+  server.client().stop();
   esp_restart();
 }
 
