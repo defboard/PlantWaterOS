@@ -11,6 +11,14 @@ namespace {
     {
       return (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
     }
+
+    const char* const minimalUpdateForm = R"(
+<form method="POST" action="" enctype="multipart/form-data">
+  Firmware:<br>
+  <input type="file" accept=".bin,.bin.gz" name="file"><br>
+  <input type="submit" value="Update"><br>
+</form>
+    )";
 }
 
 class HTTPUpdateServer {
@@ -18,9 +26,17 @@ public:
 
   void setup(WebServer *server, const char* path)
   {
+    server->on(path, HTTP_GET,
+        [server]() { serveUpdateForm(server); });
+
     server->on(path, HTTP_POST,
         [server]() { finishHandler(server); },
         [server]() { uploadHandler(server); });
+  }
+
+  static void serveUpdateForm(WebServer* server)
+  {
+    server->send(200, "text/html", minimalUpdateForm);
   }
 
   static void finishHandler(WebServer *server)
