@@ -13,9 +13,11 @@ options=(--rm -v "$PWD:/project" -w /project)
 #   options+=( --device-cgroup-rule='c 188:* rwm' )   # ttyUSB devices
 #
 # Instead, we currently have to manually pass the device at start time:
-if [[ -e /dev/ttyUSB0 ]]; then
-    options+=(--device /dev/ttyUSB0)
-fi
+for device in /dev/ttyUSB* /dev/ttyACM*; do
+    if [[ -e "$device" ]]; then
+        options+=(--device "$device")
+    fi
+done
 
 # Needed to forward membership in dialout/uucp group to rootless container:
 # (Note that you also need to setup /etc/subuid and /etc/subgid appropriately)
