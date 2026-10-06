@@ -25,7 +25,7 @@ public:
 
   static void finishHandler(WebServer *server)
   {
-    const bool hasError = !Update.hasError();
+    const bool hasError = Update.hasError();
     const int code = Update.getError();
     const String message = hasError
         ? Update.errorString()
