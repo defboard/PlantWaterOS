@@ -232,6 +232,9 @@ const initialState = {
   // client
   activeTab: "status",
   editstatus: {},
+  // Will be `undefined` initially, but our code should be able to handle this:
+  // serverTime,
+  // requestTime,
 };
 updateRecursive(initialState, savedState);
 updateRecursive(initialState, {
@@ -349,7 +352,9 @@ const every = (dispatch, [delay, action]) => {
 };
 
 const adjustTime = (time, delta) => {
-  if (time === undefined || delta === undefined || isNaN(delta)) {
+  if (time === undefined || time === null ||
+      !(typeof(delta) == "number") || isNaN(delta))
+  {
     return time;
   }
   return new Date(time.valueOf() + delta);
@@ -362,10 +367,10 @@ const DISABLE_TIMEOUT = 750;
 const RELOAD_TIMEOUT = 10_000;
 
 const GotServerStatus = (state, serverstatus) => {
+  // Can be NaN if serverstatus.serverTime is undefined or invalid:
   const serverTime = Date.parse(serverstatus.serverTime);
   const requestTime = new Date().valueOf();
-  return [
-    storeLocal({
+  const newState = isNaN(serverTime) ? state : storeLocal({
       ...state,
       serverTime,
       requestTime,
@@ -373,7 +378,9 @@ const GotServerStatus = (state, serverstatus) => {
         ...state.serverstatus,
         ...serverstatus,
       },
-    }),
+  });
+  return [
+    newState,
     [timeout, [DISABLE_TIMEOUT, EnableInputs]],
   ];
 };
